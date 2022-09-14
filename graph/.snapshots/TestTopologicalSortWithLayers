@@ -1,0 +1,27 @@
+([][]string) (len=4) {
+  ([]string) (len=8) {
+    (string) (len=12) "Frontend URL",
+    (string) (len=7) "API URL",
+    (string) (len=8) "Auth URL",
+    (string) (len=5) "Queue",
+    (string) (len=9) "S3 Bucket",
+    (string) (len=11) "SES Mailing",
+    (string) (len=17) "Database Instance",
+    (string) (len=13) "Load Balancer"
+  },
+  ([]string) (len=4) {
+    (string) (len=19) "Frontend Deployment",
+    (string) (len=14) "Seed Migration",
+    (string) (len=14) "API DNS Record",
+    (string) (len=15) "Auth DNS Record"
+  },
+  ([]string) (len=2) {
+    (string) (len=19) "Frontend DNS Record",
+    (string) (len=8) "Database"
+  },
+  ([]string) (len=3) {
+    (string) (len=14) "API Deployment",
+    (string) (len=15) "Auth Deployment",
+    (string) (len=20) "Workflows Deployment"
+  }
+}

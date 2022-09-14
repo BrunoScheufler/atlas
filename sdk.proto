@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+option go_package = "github.com/brunoscheufler/atlas/protobuf";
+
+package sdk;
+
+service Atlasfile {
+  rpc Eval (EvalRequest) returns (EvalReply) {}
+  rpc Ping (PingRequest) returns (PingReply) {}
+}
+
+message EvalRequest {}
+message EvalReply {
+  string output = 1;
+}
+
+message PingRequest {}
+message PingReply {}
+

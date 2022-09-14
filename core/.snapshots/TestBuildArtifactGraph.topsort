@@ -1,0 +1,12 @@
+([][]string) (len=3) {
+  ([]string) (len=1) {
+    (string) (len=4) "base"
+  },
+  ([]string) (len=2) {
+    (string) (len=3) "api",
+    (string) (len=2) "db"
+  },
+  ([]string) (len=1) {
+    (string) (len=4) "tool"
+  }
+}
