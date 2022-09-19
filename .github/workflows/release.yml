@@ -1,7 +1,7 @@
 on:
   # https://docs.github.com/en/developers/webhooks-and-events/webhooks/webhook-events-and-payloads#release
   release:
-    types: [created,prereleased,published,released]
+    types: [created]
 
 jobs:
   releases-matrix:
