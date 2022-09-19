@@ -1,5 +1,7 @@
 # atlas: better local development
 
+> **⚠️ Note:** Atlas is in early preview, bugs and changes are expected.
+
 ## background
 
 Local development involves running as many services as possible locally, mostly using containers for reproducible builds
