@@ -1,0 +1,24 @@
+on:
+  push:
+    tags: "v*"
+
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release"
+        required: true
+
+jobs:
+  homebrew:
+    name: Bump Homebrew formula
+    runs-on: ubuntu-latest
+    steps:
+      - uses: mislav/bump-homebrew-formula-action@v2
+        with:
+          formula-name: atlas
+          homebrew-tap: brunoscheufler/homebrew-atlas
+          base-branch: main
+          # only used for workflow_dispatch, otherwise defaults to the currently pushed tag
+          tag-name: ${{ github.event.inputs.tag }}
+        env:
+          COMMITTER_TOKEN: ${{ secrets.HOMEBREW_COMMITTER_TOKEN }}

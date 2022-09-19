@@ -5,7 +5,7 @@ on:
 
 jobs:
   releases-matrix:
-    name: Release Go Binary
+    name: Release CLI binary
     runs-on: ubuntu-latest
     strategy:
       matrix:
