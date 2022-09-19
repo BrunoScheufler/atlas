@@ -27,41 +27,40 @@ In the root directory of your repository, you can create a `Atlasfile.root.go` f
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	atlas "github.com/brunoscheufler/atlas/core"
+	"github.com/brunoscheufler/atlas/atlasfile"
 	"github.com/brunoscheufler/atlas/sdk/atlas-sdk-go"
 	"os"
 )
 
 func main() {
-	err = sdk.Start(&atlas.Atlasfile{
-		Services: []atlas.ServiceConfig{
+	err := sdk.Start(&atlasfile.Atlasfile{
+		Services: []atlasfile.ServiceConfig{
 			{
 				Name:  "global-db",
 				Image: "postgres:14",
-				Ports: []atlas.PortRequest{{5432, "tcp"}},
+				Ports: []atlasfile.PortRequest{{5432, "tcp"}},
 				Environment: map[string]string{
 					"POSTGRES_USER":     "directory",
 					"POSTGRES_PASSWORD": "directory",
 					"POSTGRES_DB":       "directory",
 					"PGDATA":            "/var/lib/postgresql/test-data",
 				},
-				Volumes: []atlas.VolumeConfig{
+				Volumes: []atlasfile.VolumeConfig{
 					{IsVolume: true, HostPathOrVolumeName: "postgres", ContainerPath: "/var/lib/postgresql/test-data"},
 				},
 			},
 			{
 				Name:  "localstack",
 				Image: "localstack/localstack:0.13.3",
-				Ports: []atlas.PortRequest{{4566, "tcp"}},
+				Ports: []atlasfile.PortRequest{{4566, "tcp"}},
 				Environment: map[string]string{
 					"SERVICES":          "s3,sqs,kinesis,firehose",
 					"DEFAULT_REGION":    "eu-central-1",
 					"EDGE_PORT":         "4566",
 					"HOSTNAME_EXTERNAL": "localstack",
 				},
-				Volumes: []atlas.VolumeConfig{
+				Volumes: []atlasfile.VolumeConfig{
 					{HostPathOrVolumeName: "./localstack", ContainerPath: "/docker-entrypoint-initaws.d"},
 				},
 			},
@@ -72,7 +71,6 @@ func main() {
 		os.Exit(1)
 	}
 }
-
 ```
 
 ### adding a service
@@ -84,18 +82,18 @@ package main
 
 import (
 	"fmt"
-	atlas "github.com/brunoscheufler/atlas/core"
+	"github.com/brunoscheufler/atlas/atlasfile"
 	"github.com/brunoscheufler/atlas/sdk/atlas-sdk-go"
 	"os"
 )
 
 func main() {
-	err := sdk.Start(&atlas.Atlasfile{
-		Services: []atlas.ServiceConfig{
+	err := sdk.Start(&atlasfile.Atlasfile{
+		Services: []atlasfile.ServiceConfig{
 			{
 				Name: "api",
-				Artifact: &atlas.ArtifactRef{
-					Artifact: &atlas.ArtifactConfig{
+				Artifact: &atlasfile.ArtifactRef{
+					Artifact: &atlasfile.ArtifactConfig{
 						Name: "api",
 					},
 				},
@@ -116,22 +114,22 @@ package main
 
 import (
 	"fmt"
-	atlas "github.com/brunoscheufler/atlas/core"
-	sdk "github.com/brunoscheufler/atlas/sdk/atlas-sdk-go"
+	"github.com/brunoscheufler/atlas/atlasfile"
+	"github.com/brunoscheufler/atlas/sdk/atlas-sdk-go"
 	"os"
 )
 
 func main() {
-	err := sdk.Start(&atlas.Atlasfile{
-		Artifacts: []atlas.ArtifactConfig{
+	err := sdk.Start(&atlasfile.Atlasfile{
+		Artifacts: []atlasfile.ArtifactConfig{
 			{
 				Name: "base",
 			},
 		},
-		Services: []atlas.ServiceConfig{
+		Services: []atlasfile.ServiceConfig{
 			{
 				Name: "api",
-				Artifact: &atlas.ArtifactRef{
+				Artifact: &atlasfile.ArtifactRef{
 					Name: "base",
 				},
 				Command:          []string{"--server"},
@@ -139,7 +137,7 @@ func main() {
 			},
 			{
 				Name: "worker",
-				Artifact: &atlas.ArtifactRef{
+				Artifact: &atlasfile.ArtifactRef{
 					Name: "base",
 				},
 				Command:          []string{"--worker"},
@@ -163,17 +161,17 @@ package main
 
 import (
 	"fmt"
-	atlas "github.com/brunoscheufler/atlas/core"
+	"github.com/brunoscheufler/atlas/atlasfile"
 	"github.com/brunoscheufler/atlas/sdk/atlas-sdk-go"
 	"os"
 )
 
 func main() {
-	err = sdk.Start(&atlas.Atlasfile{
-		Stacks: []atlas.StackConfig{
+	err := sdk.Start(&atlasfile.Atlasfile{
+		Stacks: []atlasfile.StackConfig{
 			{
 				Name: "regional",
-				Services: []atlas.StackService{
+				Services: []atlasfile.StackService{
 					{
 						Name:        "api",
 					},
