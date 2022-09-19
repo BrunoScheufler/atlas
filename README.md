@@ -24,7 +24,16 @@ necessary containers.
 
 ## installation
 
-Download the Atlas CLI from the [releases](https://github.com/brunoscheufler/atlas/releases) page.
+### homebrew
+
+```bash
+brew tap brunoscheufler/atlas
+brew install brunoscheufler/atlas/atlas
+```
+
+### binary
+
+Download the Atlas CLI binary from the [releases](https://github.com/brunoscheufler/atlas/releases) page.
 
 ## getting started
 

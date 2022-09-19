@@ -7,6 +7,8 @@ import (
 	"os"
 )
 
+var version string
+
 var rootCmd = &cobra.Command{
 	Use:   "atlas",
 	Short: "atlas makes local development easy",
@@ -39,6 +41,7 @@ func main() {
 	prepareDownCmd(rootCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(updateCmd)
+	rootCmd.AddCommand(versionCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
