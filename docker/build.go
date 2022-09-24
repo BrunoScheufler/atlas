@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func BuildArtifact(ctx context.Context, logger logrus.FieldLogger, artifact *atlasfile.ArtifactConfig, rootDir string) error {
+func BuildArtifact(ctx context.Context, logger logrus.FieldLogger, artifact *atlasfile.ArtifactConfig) error {
 	artifactDir := filepath.Dir(artifact.GetDirpath())
 	if artifact.Build.Context != "" {
 		artifactDir = filepath.Join(artifactDir, artifact.Build.Context)
@@ -18,7 +18,6 @@ func BuildArtifact(ctx context.Context, logger logrus.FieldLogger, artifact *atl
 
 	logger.WithFields(logrus.Fields{
 		"artifact": artifact.Name,
-		"rootDir":  rootDir,
 		"dirpath":  artifactDir,
 		"context":  artifact.Build.Context,
 	}).Debugf("Building artifact")

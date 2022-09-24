@@ -70,7 +70,7 @@ func Up(ctx context.Context, logger logrus.FieldLogger, version, cwd string, sta
 	}
 
 	// TODO only build artifacts required for stacks
-	err = buildArtifacts(ctx, logger, mergedFile, layers, cwd)
+	err = buildArtifacts(ctx, logger, mergedFile, layers)
 	if err != nil {
 		return fmt.Errorf("could not build artifacts: %w", err)
 	}
@@ -211,7 +211,7 @@ func getRequiredServices(stack atlasfile.StackConfig, file *atlasfile.Atlasfile)
 	return services
 }
 
-func buildArtifacts(ctx context.Context, logger logrus.FieldLogger, file *atlasfile.Atlasfile, layers [][]string, rootDir string) error {
+func buildArtifacts(ctx context.Context, logger logrus.FieldLogger, file *atlasfile.Atlasfile, layers [][]string) error {
 	for _, layer := range layers {
 		bar := progressbar.NewOptions(len(layer), progressbar.OptionSetDescription("Building artifacts"), progressbar.OptionClearOnFinish())
 
@@ -224,7 +224,7 @@ func buildArtifacts(ctx context.Context, logger logrus.FieldLogger, file *atlasf
 
 			bar.Describe(fmt.Sprintf("Building artifact %s", artifactName))
 
-			err := docker.BuildArtifact(ctx, logger, artifact, rootDir)
+			err := docker.BuildArtifact(ctx, logger, artifact)
 			if err != nil {
 				return fmt.Errorf("could not build artifact %s: %w", artifact.Name, err)
 			}
