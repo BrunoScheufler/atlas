@@ -8,6 +8,10 @@ import (
 )
 
 func Down(ctx context.Context, logger logrus.FieldLogger, cwd string, stackNames []string) error {
+	if !docker.IsRunning(ctx) {
+		return fmt.Errorf("docker is not running")
+	}
+
 	// TODO only drop workloads from current stacks (and maybe orphans, too?)
 	err := docker.CleanupAll(ctx, logger)
 	if err != nil {

@@ -23,6 +23,7 @@ func (a *Atlasfile) GetArtifact(name string) *ArtifactConfig {
 	return nil
 }
 
+// GetDirpath returns path of .atlas directory artifact was declared in
 func (ac *ArtifactConfig) GetDirpath() string {
 	return ac.dirpath
 }
@@ -52,6 +53,7 @@ func (s *StackConfig) SetContainerName(service, containerName string) {
 	s.containerNames[service] = containerName
 }
 
+// GetDirpath returns path of .atlas directory service was declared in
 func (s *ServiceConfig) GetDirpath() string {
 	return s.dirpath
 }

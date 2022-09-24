@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/brunoscheufler/atlas/core"
+	"github.com/brunoscheufler/atlas/atlasfile"
 	"github.com/brunoscheufler/atlas/protobuf"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -13,7 +13,7 @@ import (
 
 type server struct {
 	protobuf.UnimplementedAtlasfileServer
-	atlasfile *atlas.Atlasfile
+	atlasfile *atlasfile.Atlasfile
 }
 
 func (s server) Eval(ctx context.Context, request *protobuf.EvalRequest) (*protobuf.EvalReply, error) {
@@ -31,7 +31,7 @@ func (s server) Ping(ctx context.Context, request *protobuf.PingRequest) (*proto
 	return &protobuf.PingReply{}, nil
 }
 
-func serve(ctx context.Context, logger *logrus.Entry, atlasfile *atlas.Atlasfile, port int) error {
+func serve(ctx context.Context, logger *logrus.Entry, atlasfile *atlasfile.Atlasfile, port int) error {
 	grpcServer := grpc.NewServer()
 	atlasFileServer := &server{
 		atlasfile: atlasfile,

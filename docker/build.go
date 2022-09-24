@@ -11,14 +11,18 @@ import (
 )
 
 func BuildArtifact(ctx context.Context, logger logrus.FieldLogger, artifact *atlasfile.ArtifactConfig) error {
-	logger.WithField("artifact", artifact.Name).Infoln("Building artifact")
-
-	dir := filepath.Dir(artifact.GetDirpath())
+	artifactDir := filepath.Dir(artifact.GetDirpath())
 	if artifact.Build.Context != "" {
-		dir = filepath.Join(dir, artifact.Build.Context)
+		artifactDir = filepath.Join(artifactDir, artifact.Build.Context)
 	}
 
-	logger.WithField("dir", dir).Infoln("Building artifact")
+	logger.WithFields(logrus.Fields{
+		"artifact": artifact.Name,
+		"dirpath":  artifactDir,
+		"context":  artifact.Build.Context,
+	}).Debugf("Building artifact")
+
+	logger.WithField("dir", artifactDir).WithField("artifact", artifact.Name).Infoln("Building artifact")
 
 	imageName := atlasfile.BuildImageName(artifact)
 
@@ -29,7 +33,7 @@ func BuildArtifact(ctx context.Context, logger logrus.FieldLogger, artifact *atl
 	}
 
 	if artifact.Build.Dockerfile != "" {
-		dockerfilePath := filepath.Join(dir, artifact.Build.Dockerfile)
+		dockerfilePath := filepath.Join(artifactDir, artifact.Build.Dockerfile)
 		args = append(args, "-f", dockerfilePath)
 	}
 
@@ -43,9 +47,9 @@ func BuildArtifact(ctx context.Context, logger logrus.FieldLogger, artifact *atl
 		args = append(args, "--target", artifact.Build.Target)
 	}
 
-	args = append(args, dir)
+	args = append(args, artifactDir)
 
-	err := exec.RunCommand(ctx, logger, fmt.Sprintf("docker %s", strings.Join(args, " ")), dir, nil)
+	err := exec.RunCommand(ctx, logger, fmt.Sprintf("docker %s", strings.Join(args, " ")), artifactDir, nil)
 	if err != nil {
 		return fmt.Errorf("could not build artifact %s: %w", artifact.Name, err)
 	}

@@ -7,7 +7,8 @@ import (
 )
 
 var listCmd = &cobra.Command{
-	Use: "ls",
+	Use:     "list",
+	Aliases: []string{"ls"},
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := createLogger()
 		cwd, err := os.Getwd()
@@ -15,7 +16,7 @@ var listCmd = &cobra.Command{
 			logger.Fatal(err)
 		}
 
-		err = atlas.List(cmd.Context(), logger, cwd)
+		err = atlas.List(cmd.Context(), logger, version, cwd)
 		if err != nil {
 			logger.Fatal(err)
 		}

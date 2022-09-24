@@ -20,7 +20,7 @@ var upCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		err = atlas.Up(cmd.Context(), logger, cwd, stacks)
+		err = atlas.Up(cmd.Context(), logger, version, cwd, stacks)
 		if err != nil {
 			cmd.PrintErrf("could not up stack: %s", err.Error())
 			os.Exit(1)
