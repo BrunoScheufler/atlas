@@ -7,7 +7,8 @@ import (
 )
 
 var listCmd = &cobra.Command{
-	Use: "ls",
+	Use:     "list",
+	Aliases: []string{"ls"},
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := createLogger()
 		cwd, err := os.Getwd()

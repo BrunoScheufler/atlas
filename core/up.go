@@ -12,6 +12,21 @@ import (
 )
 
 func Up(ctx context.Context, logger logrus.FieldLogger, version, cwd string, stackNames []string) error {
+	logger.WithFields(
+		logrus.Fields{
+			"version": version,
+			"cwd":     cwd,
+			"stacks":  stackNames,
+		},
+	).Debugf("Running core.Up")
+
+	cwd, err := atlasfile.FindRootDir(cwd)
+	if err != nil {
+		return fmt.Errorf("could not find root directory: %w", err)
+	}
+
+	logger.WithField("cwd", cwd).Debugf("Found root directory")
+
 	mergedFile, err := atlasfile.Collect(ctx, logger, version, cwd)
 	if err != nil {
 		return fmt.Errorf("could not collect atlas files: %w", err)
@@ -55,7 +70,7 @@ func Up(ctx context.Context, logger logrus.FieldLogger, version, cwd string, sta
 	}
 
 	// TODO only build artifacts required for stacks
-	err = buildArtifacts(ctx, logger, mergedFile, layers)
+	err = buildArtifacts(ctx, logger, mergedFile, layers, cwd)
 	if err != nil {
 		return fmt.Errorf("could not build artifacts: %w", err)
 	}
@@ -196,7 +211,7 @@ func getRequiredServices(stack atlasfile.StackConfig, file *atlasfile.Atlasfile)
 	return services
 }
 
-func buildArtifacts(ctx context.Context, logger logrus.FieldLogger, file *atlasfile.Atlasfile, layers [][]string) error {
+func buildArtifacts(ctx context.Context, logger logrus.FieldLogger, file *atlasfile.Atlasfile, layers [][]string, rootDir string) error {
 	for _, layer := range layers {
 		bar := progressbar.NewOptions(len(layer), progressbar.OptionSetDescription("Building artifacts"), progressbar.OptionClearOnFinish())
 
@@ -209,7 +224,7 @@ func buildArtifacts(ctx context.Context, logger logrus.FieldLogger, file *atlasf
 
 			bar.Describe(fmt.Sprintf("Building artifact %s", artifactName))
 
-			err := docker.BuildArtifact(ctx, logger, artifact)
+			err := docker.BuildArtifact(ctx, logger, artifact, rootDir)
 			if err != nil {
 				return fmt.Errorf("could not build artifact %s: %w", artifact.Name, err)
 			}

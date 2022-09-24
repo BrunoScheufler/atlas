@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/brunoscheufler/atlas/helper"
+	"github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
 	"time"
@@ -18,7 +19,7 @@ type cachedFile struct {
 	Version  string    `json:"version"`
 }
 
-func cacheAtlasfile(ctx context.Context, version, atlasDirPath string, atlasfile *Atlasfile) error {
+func cacheAtlasfile(ctx context.Context, logger logrus.FieldLogger, version, atlasDirPath string, atlasfile *Atlasfile) error {
 	cacheFile := filepath.Join(atlasDirPath, "cache.json")
 
 	hash, err := computeAtlasfileHash(atlasDirPath)
@@ -46,7 +47,7 @@ func cacheAtlasfile(ctx context.Context, version, atlasDirPath string, atlasfile
 	return nil
 }
 
-func getCachedAtlasfile(ctx context.Context, version string, atlasDirPath string) (*Atlasfile, error) {
+func getCachedAtlasfile(ctx context.Context, logger logrus.FieldLogger, version string, atlasDirPath string) (*Atlasfile, error) {
 	cacheFile := filepath.Join(atlasDirPath, "cache.json")
 
 	if !helper.FileExists(cacheFile) {
@@ -64,7 +65,7 @@ func getCachedAtlasfile(ctx context.Context, version string, atlasDirPath string
 		return nil, fmt.Errorf("could not unmarshal cache file: %w", err)
 	}
 
-	shouldInvalidate, err := shouldInvalidateAtlasfile(atlasDirPath, *cachedFile, version)
+	shouldInvalidate, err := shouldInvalidateAtlasfile(ctx, logger, atlasDirPath, *cachedFile, version)
 	if err != nil {
 		return nil, fmt.Errorf("could not check if cache is valid: %w", err)
 	}
@@ -78,12 +79,22 @@ func getCachedAtlasfile(ctx context.Context, version string, atlasDirPath string
 		return nil, nil
 	}
 
+	logger.WithFields(logrus.Fields{
+		"atlasDirPath": atlasDirPath,
+		"cachedAt":     cachedFile.CachedAt,
+		"hash":         cachedFile.Hash,
+	}).Debugf("using cached atlasfile")
+
 	return &cachedFile.File, nil
 }
 
-func shouldInvalidateAtlasfile(dirPath string, file cachedFile, version string) (bool, error) {
+func shouldInvalidateAtlasfile(ctx context.Context, logger logrus.FieldLogger, dirPath string, file cachedFile, version string) (bool, error) {
 	// Check if cache was produced by older version
 	if file.Version != version {
+		logger.WithFields(logrus.Fields{
+			"cachedVersion":  file.Version,
+			"currentVersion": version,
+		}).Debugln("mismatch in version, invalidating cache")
 		return true, nil
 	}
 
@@ -95,6 +106,7 @@ func shouldInvalidateAtlasfile(dirPath string, file cachedFile, version string) 
 
 	// Check if cache is older than 1 day
 	if time.Since(cachedAt) > time.Hour*24 {
+		logger.WithField("cachedAt", file.CachedAt).Debugln("cache is older than 1 day, invalidating")
 		return true, nil
 	}
 
@@ -104,6 +116,10 @@ func shouldInvalidateAtlasfile(dirPath string, file cachedFile, version string) 
 	}
 
 	if currentHash != file.Hash {
+		logger.WithFields(logrus.Fields{
+			"cachedHash":  file.Hash,
+			"currentHash": currentHash,
+		}).Debugln("mismatch in hash, invalidating cache")
 		return true, nil
 	}
 

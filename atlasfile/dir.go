@@ -82,11 +82,6 @@ func FindAtlasDirectories(dir string) ([]string, error) {
 }
 
 func Collect(ctx context.Context, logger logrus.FieldLogger, version, cwd string) (*Atlasfile, error) {
-	cwd, err := FindRootDir(cwd)
-	if err != nil {
-		return nil, fmt.Errorf("could not find root directory: %w", err)
-	}
-
 	// Find all .atlas directories with glob
 	paths, err := FindAtlasDirectories(cwd)
 	if err != nil {
@@ -134,7 +129,7 @@ func Collect(ctx context.Context, logger logrus.FieldLogger, version, cwd string
 
 // TODO Support non-code/Toml Atlasfile
 func readAtlasFile(ctx context.Context, logger logrus.FieldLogger, version, atlasDirPath string) (*Atlasfile, error) {
-	cachedFile, err := getCachedAtlasfile(ctx, version, atlasDirPath)
+	cachedFile, err := getCachedAtlasfile(ctx, logger, version, atlasDirPath)
 	if err != nil {
 		return nil, fmt.Errorf("could not read cached Atlasfile: %w", err)
 	}
@@ -164,7 +159,7 @@ func readAtlasFile(ctx context.Context, logger logrus.FieldLogger, version, atla
 		return nil, fmt.Errorf("missing go.mod or package.json, cannot infer language to use")
 	}
 
-	err = cacheAtlasfile(ctx, version, atlasDirPath, file)
+	err = cacheAtlasfile(ctx, logger, version, atlasDirPath, file)
 	if err != nil {
 		return nil, fmt.Errorf("could not cache Atlasfile: %w", err)
 	}

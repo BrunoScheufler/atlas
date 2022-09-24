@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -37,13 +38,15 @@ func createLogger() logrus.FieldLogger {
 }
 
 func main() {
+	ctx := context.Background()
+
 	prepareUpCmd(rootCmd)
 	prepareDownCmd(rootCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(updateCmd)
 	rootCmd.AddCommand(versionCmd)
 
-	if err := rootCmd.Execute(); err != nil {
+	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
