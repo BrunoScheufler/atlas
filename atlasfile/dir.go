@@ -81,7 +81,7 @@ func FindAtlasDirectories(dir string) ([]string, error) {
 	return files, nil
 }
 
-func Collect(ctx context.Context, logger logrus.FieldLogger, cwd string) (*Atlasfile, error) {
+func Collect(ctx context.Context, logger logrus.FieldLogger, version, cwd string) (*Atlasfile, error) {
 	cwd, err := FindRootDir(cwd)
 	if err != nil {
 		return nil, fmt.Errorf("could not find root directory: %w", err)
@@ -112,7 +112,7 @@ func Collect(ctx context.Context, logger logrus.FieldLogger, cwd string) (*Atlas
 		g.Go(func() error {
 			bar.Describe(fmt.Sprintf("Reading Atlasfile %s", relpath))
 
-			file, err := readAtlasFile(ctx, logger, path)
+			file, err := readAtlasFile(ctx, logger, version, path)
 			if err != nil {
 				return fmt.Errorf("could not read .atlas file: %w", err)
 			}
@@ -132,20 +132,46 @@ func Collect(ctx context.Context, logger logrus.FieldLogger, cwd string) (*Atlas
 	return mergeAtlasFiles(collectedFiles), nil
 }
 
-// TODO Cache files in .atlas directory and return previous value if unchanged
 // TODO Support non-code/Toml Atlasfile
-func readAtlasFile(ctx context.Context, logger logrus.FieldLogger, atlasDirPath string) (*Atlasfile, error) {
+func readAtlasFile(ctx context.Context, logger logrus.FieldLogger, version, atlasDirPath string) (*Atlasfile, error) {
+	cachedFile, err := getCachedAtlasfile(ctx, version, atlasDirPath)
+	if err != nil {
+		return nil, fmt.Errorf("could not read cached Atlasfile: %w", err)
+	}
+
+	if cachedFile != nil {
+		cachedFile.dirpath = atlasDirPath
+		return cachedFile, nil
+	}
+
+	var file *Atlasfile
+
 	// Check if go.mod exists
 	if helper.FileExists(filepath.Join(atlasDirPath, "go.mod")) {
-		return readGoAtlasFile(ctx, logger, atlasDirPath)
+		file, err = readGoAtlasFile(ctx, logger, atlasDirPath)
 	}
 
 	// Check if package.json exists
 	if helper.FileExists(filepath.Join(atlasDirPath, "package.json")) {
-		return readTypeScriptAtlasFile(ctx, atlasDirPath)
+		file, err = readTypeScriptAtlasFile(ctx, atlasDirPath)
 	}
 
-	return nil, fmt.Errorf("missing go.mod or package.json, cannot infer language to use")
+	if err != nil {
+		return nil, fmt.Errorf("could not read Atlasfile: %w", err)
+	}
+
+	if file == nil {
+		return nil, fmt.Errorf("missing go.mod or package.json, cannot infer language to use")
+	}
+
+	err = cacheAtlasfile(ctx, version, atlasDirPath, file)
+	if err != nil {
+		return nil, fmt.Errorf("could not cache Atlasfile: %w", err)
+	}
+
+	file.dirpath = atlasDirPath
+
+	return file, nil
 }
 
 func readGoAtlasFile(ctx context.Context, logger logrus.FieldLogger, atlasDirPath string) (*Atlasfile, error) {
@@ -223,7 +249,6 @@ func readGoAtlasFile(ctx context.Context, logger logrus.FieldLogger, atlasDirPat
 	if err != nil {
 		return nil, fmt.Errorf("could not parse atlasfile: %w", err)
 	}
-	atlasfile.dirpath = atlasDirPath
 
 	_ = conn.Close()
 

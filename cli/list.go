@@ -15,7 +15,7 @@ var listCmd = &cobra.Command{
 			logger.Fatal(err)
 		}
 
-		err = atlas.List(cmd.Context(), logger, cwd)
+		err = atlas.List(cmd.Context(), logger, version, cwd)
 		if err != nil {
 			logger.Fatal(err)
 		}

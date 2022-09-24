@@ -11,10 +11,14 @@ import (
 	"time"
 )
 
-func Up(ctx context.Context, logger logrus.FieldLogger, cwd string, stackNames []string) error {
-	mergedFile, err := atlasfile.Collect(ctx, logger, cwd)
+func Up(ctx context.Context, logger logrus.FieldLogger, version, cwd string, stackNames []string) error {
+	mergedFile, err := atlasfile.Collect(ctx, logger, version, cwd)
 	if err != nil {
 		return fmt.Errorf("could not collect atlas files: %w", err)
+	}
+
+	if !docker.IsRunning(ctx) {
+		return fmt.Errorf("docker is not running")
 	}
 
 	err = Down(ctx, logger, cwd, stackNames)

@@ -4,7 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/brunoscheufler/atlas/core"
+	"github.com/brunoscheufler/atlas/atlasfile"
 	"github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
@@ -12,7 +12,7 @@ import (
 	"syscall"
 )
 
-func Start(atlasfile *atlas.Atlasfile) error {
+func Start(atlasfile *atlasfile.Atlasfile) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
