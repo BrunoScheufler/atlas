@@ -49,7 +49,7 @@ func BuildArtifact(ctx context.Context, logger logrus.FieldLogger, artifact *atl
 
 	args = append(args, artifactDir)
 
-	err := exec.RunCommand(ctx, logger, fmt.Sprintf("docker %s", strings.Join(args, " ")), artifactDir, nil)
+	err := exec.RunCommand(ctx, logger, fmt.Sprintf("docker %s", strings.Join(args, " ")), artifactDir, nil, true)
 	if err != nil {
 		return fmt.Errorf("could not build artifact %s: %w", artifact.Name, err)
 	}

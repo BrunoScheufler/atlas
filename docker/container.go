@@ -23,11 +23,14 @@ func CreateServiceContainer(
 	args := []string{
 		"run",
 		"-d",
-		"--restart",
-		"always",
 		"--name",
 		containerName,
 	}
+
+	if string(service.Restart) == "" {
+		service.Restart = atlasfile.ContainerRestartsAlways
+	}
+	args = append(args, "--restart", string(service.Restart))
 
 	envVars := make(map[string]string)
 
@@ -94,7 +97,7 @@ func CreateServiceContainer(
 		args = append(args, service.Command...)
 	}
 
-	err = exec.RunCommand(ctx, logger, fmt.Sprintf("docker %s", strings.Join(args, " ")), "", nil)
+	err = exec.RunCommand(ctx, logger, fmt.Sprintf("docker %s", strings.Join(args, " ")), "", nil, false)
 	if err != nil {
 		return fmt.Errorf("could not create container %s: %w", containerName, err)
 	}
@@ -103,7 +106,7 @@ func CreateServiceContainer(
 		for _, stackName := range stackService.JoinStackNetworks {
 			netName := file.GetStack(stackName).GetNetworkName()
 
-			err = exec.RunCommand(ctx, logger, fmt.Sprintf("docker network connect %s %s", netName, containerName), "", nil)
+			err = exec.RunCommand(ctx, logger, fmt.Sprintf("docker network connect %s %s", netName, containerName), "", nil, false)
 			if err != nil {
 				return fmt.Errorf("could not connect container %s to network %s: %w", containerName, netName, err)
 			}

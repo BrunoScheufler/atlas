@@ -5,18 +5,30 @@ import (
 	"context"
 	"fmt"
 	"github.com/sirupsen/logrus"
+	"io"
 	"os"
 	"os/exec"
 )
 
-func RunCommand(ctx context.Context, logger logrus.FieldLogger, command string, cwd string, env []string) error {
+func RunCommand(ctx context.Context, logger logrus.FieldLogger, command string, cwd string, env []string, logVisible bool) error {
 	cmd := exec.CommandContext(ctx, "bash", "-c", command)
 
 	outBuf := &bytes.Buffer{}
 	errBuf := &bytes.Buffer{}
 
-	cmd.Stdout = outBuf
-	cmd.Stderr = errBuf
+	var wo io.Writer = outBuf
+	if logVisible {
+		wo = io.MultiWriter(outBuf, os.Stdout)
+
+	}
+
+	var we io.Writer = errBuf
+	if logVisible {
+		we = io.MultiWriter(errBuf, os.Stderr)
+	}
+
+	cmd.Stdout = wo
+	cmd.Stderr = we
 
 	cmd.Env = os.Environ()
 
@@ -64,8 +76,12 @@ func StartCommand(ctx context.Context, logger logrus.FieldLogger, command string
 	outBuf := &bytes.Buffer{}
 	errBuf := &bytes.Buffer{}
 
-	cmd.Stdout = outBuf
-	cmd.Stderr = errBuf
+	// Write output to stdout and outBuf
+	wo := io.MultiWriter(outBuf, os.Stdout)
+	we := io.MultiWriter(errBuf, os.Stderr)
+
+	cmd.Stdout = wo
+	cmd.Stderr = we
 
 	cmd.Env = os.Environ()
 
