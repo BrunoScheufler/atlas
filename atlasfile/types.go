@@ -32,6 +32,15 @@ type PortExpose struct {
 	ContainerPort int
 }
 
+type ContainerRestarts string
+
+const (
+	ContainerRestartsAlways        = "always"
+	ContainerRestartsOnFailure     = "on-failure"
+	ContainerRestartsUnlessStopped = "unless-stopped"
+	ContainerRestartsNo            = "no"
+)
+
 type ServiceConfig struct {
 	dirpath string
 
@@ -49,6 +58,8 @@ type ServiceConfig struct {
 	EnvironmentFiles []string          `json:"environment_files"`
 
 	Volumes []VolumeConfig `json:"volumes"`
+
+	Restart ContainerRestarts `json:"restart"`
 }
 
 type StackService struct {

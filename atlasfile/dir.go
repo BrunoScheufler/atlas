@@ -171,7 +171,7 @@ func readAtlasFile(ctx context.Context, logger logrus.FieldLogger, version, atla
 
 func readGoAtlasFile(ctx context.Context, logger logrus.FieldLogger, atlasDirPath string) (*Atlasfile, error) {
 	// Check if building the file works
-	err := exec.RunCommand(ctx, logger, "go build -o /dev/null .", atlasDirPath, nil)
+	err := exec.RunCommand(ctx, logger, "go build -o /dev/null .", atlasDirPath, nil, true)
 	if err != nil {
 		return nil, fmt.Errorf("could not build atlas file (%s): %w", atlasDirPath, err)
 	}

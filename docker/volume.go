@@ -8,7 +8,7 @@ import (
 )
 
 func CreateVolume(ctx context.Context, logger logrus.FieldLogger, name string) error {
-	err := exec.RunCommand(ctx, logger, fmt.Sprintf("docker volume create %s", name), "", nil)
+	err := exec.RunCommand(ctx, logger, fmt.Sprintf("docker volume create %s", name), "", nil, false)
 	if err != nil {
 		return fmt.Errorf("could not create volume %s: %w", name, err)
 	}
