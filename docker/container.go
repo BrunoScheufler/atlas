@@ -25,6 +25,8 @@ func CreateServiceContainer(
 		"-d",
 		"--name",
 		containerName,
+		"--hostname",
+		service.Name,
 	}
 
 	if string(service.Restart) == "" {
@@ -85,6 +87,18 @@ func CreateServiceContainer(
 
 			args = append(args, "-p", fmt.Sprintf("%d:%d/%s", expose.HostPort, expose.ContainerPort, servicePortRequest.Protocol))
 		}
+	}
+
+	if service.Entrypoint != nil {
+		args = append(args, "--entrypoint", strings.Join(service.Entrypoint, " "))
+	}
+
+	if service.Interactive {
+		args = append(args, "-i")
+	}
+
+	if service.TTY {
+		args = append(args, "-t")
 	}
 
 	imageName, err := file.GetServiceImage(service)

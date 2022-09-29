@@ -60,6 +60,9 @@ type ServiceConfig struct {
 	Volumes []VolumeConfig `json:"volumes"`
 
 	Restart ContainerRestarts `json:"restart"`
+
+	Interactive bool `json:"interactive"`
+	TTY         bool `json:"tty"`
 }
 
 type StackService struct {
