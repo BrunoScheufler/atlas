@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/brunoscheufler/atlas/atlasfile"
 	"github.com/brunoscheufler/atlas/docker"
-	"github.com/schollz/progressbar/v3"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 	"math/rand"
 	"time"
 )
@@ -41,17 +41,9 @@ func Up(ctx context.Context, logger logrus.FieldLogger, version, cwd string, sta
 		return fmt.Errorf("could not down: %w", err)
 	}
 
-	var stacks []atlasfile.StackConfig
-	if stackNames != nil {
-		for _, name := range stackNames {
-			stack := mergedFile.GetStack(name)
-			if stack == nil {
-				return fmt.Errorf("could not find stack %s", name)
-			}
-			stacks = append(stacks, *stack)
-		}
-	} else {
-		stacks = mergedFile.Stacks
+	stacks, err := mergedFile.GetStacks(stackNames)
+	if err != nil {
+		return fmt.Errorf("could not get stacks: %w", err)
 	}
 
 	services, err := getRequiredServicesForStacks(stacks, mergedFile)
@@ -69,8 +61,7 @@ func Up(ctx context.Context, logger logrus.FieldLogger, version, cwd string, sta
 		return fmt.Errorf("could not topologically sort artifacts: %w", err)
 	}
 
-	// TODO only build artifacts required for stacks
-	err = buildArtifacts(ctx, logger, mergedFile, layers)
+	err = buildArtifacts(ctx, logger, mergedFile, layers, cwd)
 	if err != nil {
 		return fmt.Errorf("could not build artifacts: %w", err)
 	}
@@ -105,18 +96,12 @@ func Up(ctx context.Context, logger logrus.FieldLogger, version, cwd string, sta
 }
 
 func startStack(ctx context.Context, logger logrus.FieldLogger, stack *atlasfile.StackConfig, file *atlasfile.Atlasfile, services []atlasfile.ServiceConfig) error {
-	bar := progressbar.NewOptions(len(stack.Services), progressbar.OptionSetDescription("Starting services"), progressbar.OptionClearOnFinish())
-	defer func() {
-		_ = bar.Finish()
-		_ = bar.Clear()
-		_ = bar.Close()
-	}()
 
 	for j := range stack.Services {
 		stackService := &stack.Services[j]
 		service := file.GetService(stackService.Name)
 
-		bar.Describe(fmt.Sprintf("Starting %s", services[j].Name))
+		logger.Infoln(fmt.Sprintf("Starting %s", services[j].Name))
 
 		containerName := randomizedName(fmt.Sprintf("atlas-%s-%s", stack.Name, service.Name))
 
@@ -127,7 +112,6 @@ func startStack(ctx context.Context, logger logrus.FieldLogger, stack *atlasfile
 
 		stack.SetContainerName(service.Name, containerName)
 
-		_ = bar.Add(1)
 	}
 
 	return nil
@@ -211,29 +195,32 @@ func getRequiredServices(stack atlasfile.StackConfig, file *atlasfile.Atlasfile)
 	return services
 }
 
-func buildArtifacts(ctx context.Context, logger logrus.FieldLogger, file *atlasfile.Atlasfile, layers [][]string) error {
+func buildArtifacts(ctx context.Context, logger logrus.FieldLogger, file *atlasfile.Atlasfile, layers [][]string, cwd string) error {
 	for _, layer := range layers {
-		bar := progressbar.NewOptions(len(layer), progressbar.OptionSetDescription("Building artifacts"), progressbar.OptionClearOnFinish())
+		g, ctx := errgroup.WithContext(ctx)
 
-		// TODO Run in parallel
 		for _, artifactName := range layer {
-			artifact := file.GetArtifact(artifactName)
-			if artifact == nil {
-				return fmt.Errorf("could not find artifact %s", artifactName)
-			}
+			artifactName := artifactName
 
-			bar.Describe(fmt.Sprintf("Building artifact %s", artifactName))
+			g.Go(func() error {
+				artifact := file.GetArtifact(artifactName)
+				if artifact == nil {
+					return fmt.Errorf("could not find artifact %s", artifactName)
+				}
 
-			err := docker.BuildArtifact(ctx, logger, artifact)
-			if err != nil {
-				return fmt.Errorf("could not build artifact %s: %w", artifact.Name, err)
-			}
+				err := docker.BuildArtifact(ctx, logger, artifact, cwd)
+				if err != nil {
+					return fmt.Errorf("could not build artifact %s: %w", artifact.Name, err)
+				}
 
-			_ = bar.Add(1)
+				return nil
+			})
 		}
 
-		_ = bar.Clear()
-		_ = bar.Close()
+		err := g.Wait()
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

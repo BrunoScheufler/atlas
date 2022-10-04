@@ -4,27 +4,80 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/logrusorgru/aurora/v3"
 	"github.com/sirupsen/logrus"
 	"io"
+	"math/rand"
 	"os"
 	"os/exec"
+	"time"
 )
 
-func RunCommand(ctx context.Context, logger logrus.FieldLogger, command string, cwd string, env []string, logVisible bool) error {
+type PrefixWriter struct {
+	w      io.Writer
+	prefix string
+}
+
+func randomColor() aurora.Color {
+	colors := []aurora.Color{
+		aurora.BrightFg | aurora.GreenFg,
+		aurora.BrightFg | aurora.BlueFg,
+		aurora.BrightFg | aurora.MagentaFg,
+		aurora.BrightFg | aurora.CyanFg,
+		aurora.BrightFg | aurora.YellowFg,
+		aurora.BrightFg | aurora.RedFg,
+		aurora.BrightFg | aurora.WhiteFg,
+	}
+
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+	return colors[rnd.Intn(len(colors))]
+}
+
+func NewPrefixWriter(w io.Writer, prefix string) *PrefixWriter {
+	if prefix != "" {
+		color := randomColor()
+		prefix = fmt.Sprintf("%s: ", aurora.Colorize(prefix, color))
+	}
+
+	return &PrefixWriter{w: w, prefix: prefix}
+}
+
+func (pw PrefixWriter) Write(p []byte) (n int, err error) {
+	lines := bytes.Split(p, []byte{'\n'})
+	for _, line := range lines {
+		if len(line) > 0 {
+			_, err = fmt.Fprintf(pw.w, "%s%s\n", pw.prefix, line)
+			if err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	return len(p), nil
+}
+
+type RunCommandOptions struct {
+	Cwd string
+	Env []string
+
+	LogVisible bool
+	LogPrefix  string
+}
+
+func RunCommand(ctx context.Context, logger logrus.FieldLogger, command string, options RunCommandOptions) error {
 	cmd := exec.CommandContext(ctx, "bash", "-c", command)
 
 	outBuf := &bytes.Buffer{}
 	errBuf := &bytes.Buffer{}
 
 	var wo io.Writer = outBuf
-	if logVisible {
-		wo = io.MultiWriter(outBuf, os.Stdout)
-
+	if options.LogVisible {
+		wo = io.MultiWriter(outBuf, NewPrefixWriter(os.Stdout, options.LogPrefix))
 	}
 
 	var we io.Writer = errBuf
-	if logVisible {
-		we = io.MultiWriter(errBuf, os.Stderr)
+	if options.LogVisible {
+		we = io.MultiWriter(errBuf, NewPrefixWriter(os.Stderr, options.LogPrefix))
 	}
 
 	cmd.Stdout = wo
@@ -32,9 +85,9 @@ func RunCommand(ctx context.Context, logger logrus.FieldLogger, command string, 
 
 	cmd.Env = os.Environ()
 
-	env = append(os.Environ(), env...)
+	env := append(os.Environ(), options.Env...)
 	cmd.Env = env
-	cmd.Dir = cwd
+	cmd.Dir = options.Cwd
 
 	err := cmd.Run()
 	if err != nil {
@@ -45,7 +98,7 @@ func RunCommand(ctx context.Context, logger logrus.FieldLogger, command string, 
 
 		fields := logrus.Fields{
 			"command": commandStr,
-			"cwd":     cwd,
+			"cwd":     options.Cwd,
 			"stdout":  outBuf.String(),
 			"stderr":  errBuf.String(),
 		}

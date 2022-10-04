@@ -7,7 +7,8 @@ import (
 )
 
 var updateCmd = &cobra.Command{
-	Use: "update",
+	Use:   "update",
+	Short: "Update dependencies of Atlasfiles in the current workspace",
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := createLogger()
 		cwd, err := os.Getwd()

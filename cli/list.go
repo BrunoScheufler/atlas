@@ -8,6 +8,7 @@ import (
 
 var listCmd = &cobra.Command{
 	Use:     "list",
+	Short:   "List all artifacts, services, and stacks defined in the current workspace",
 	Aliases: []string{"ls"},
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := createLogger()

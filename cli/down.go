@@ -7,7 +7,8 @@ import (
 )
 
 var downCmd = &cobra.Command{
-	Use: "down",
+	Use:   "down",
+	Short: "Stop all running service containers and remove volumes and networks",
 	Run: func(cmd *cobra.Command, args []string) {
 		var stacks []string
 		cmd.Flags().StringArrayVarP(&stacks, "stack", "s", nil, "Stack names (required)")
