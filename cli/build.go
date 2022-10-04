@@ -7,7 +7,8 @@ import (
 )
 
 var buildCmd = &cobra.Command{
-	Use: "build",
+	Use:   "build",
+	Short: "Build all artifacts required for stacks",
 	Run: func(cmd *cobra.Command, args []string) {
 		var stacks []string
 		cmd.Flags().StringArrayVarP(&stacks, "stack", "s", nil, "Stack names (required)")

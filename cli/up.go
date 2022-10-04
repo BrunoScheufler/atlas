@@ -8,7 +8,7 @@ import (
 
 var upCmd = &cobra.Command{
 	Use:   "up",
-	Short: "atlas makes local development easy",
+	Short: "Build artifacts, create networks and volumes, and start service containers",
 	Run: func(cmd *cobra.Command, args []string) {
 		var stacks []string
 		cmd.Flags().StringArrayVarP(&stacks, "stack", "s", nil, "Stack names (required)")
