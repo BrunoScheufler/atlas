@@ -6,9 +6,9 @@ import (
 )
 
 func (a *Atlasfile) GetService(name string) *ServiceConfig {
-	for _, service := range a.Services {
-		if service.Name == name {
-			return &service
+	for i := range a.Services {
+		if a.Services[i].Name == name {
+			return &a.Services[i]
 		}
 	}
 	return nil
