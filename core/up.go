@@ -76,7 +76,7 @@ func Up(ctx context.Context, logger logrus.FieldLogger, version, cwd string, sta
 		}
 	}
 
-	err = ensureVolumes(ctx, logger, services)
+	err = ensureVolumes(ctx, logger, stacks, mergedFile)
 	if err != nil {
 		return fmt.Errorf("could not ensure volumes: %w", err)
 	}
@@ -101,7 +101,7 @@ func startStack(ctx context.Context, logger logrus.FieldLogger, stack *atlasfile
 		stackService := &stack.Services[j]
 		service := file.GetService(stackService.Name)
 
-		logger.Infoln(fmt.Sprintf("Starting %s", services[j].Name))
+		logger.WithField("stack", stack.Name).Infoln(fmt.Sprintf("Starting %s", services[j].Name))
 
 		containerName := randomizedName(fmt.Sprintf("atlas-%s-%s", stack.Name, service.Name))
 
@@ -111,7 +111,6 @@ func startStack(ctx context.Context, logger logrus.FieldLogger, stack *atlasfile
 		}
 
 		stack.SetContainerName(service.Name, containerName)
-
 	}
 
 	return nil
@@ -144,17 +143,20 @@ func getImmediateArtifactsNeededByServices(services []atlasfile.ServiceConfig, f
 	return artifacts, nil
 }
 
-func ensureVolumes(ctx context.Context, logger logrus.FieldLogger, services []atlasfile.ServiceConfig) error {
-	for i, service := range services {
-		for j, volume := range service.Volumes {
-			if volume.IsVolume {
-				volName := randomizedName(fmt.Sprintf("atlas-%s-%s", service.Name, volume.HostPathOrVolumeName))
-				err := docker.CreateVolume(ctx, logger, volName)
-				if err != nil {
-					return fmt.Errorf("could not create volume: %w", err)
-				}
+func ensureVolumes(ctx context.Context, logger logrus.FieldLogger, stacks []atlasfile.StackConfig, a *atlasfile.Atlasfile) error {
+	for _, stack := range stacks {
+		for _, service := range stack.Services {
+			service := a.GetService(service.Name)
+			for j, volume := range service.Volumes {
+				if volume.IsVolume {
+					volName := randomizedName(fmt.Sprintf("atlas-%s-%s-%s", stack.Name, service.Name, volume.HostPathOrVolumeName))
+					err := docker.CreateVolume(ctx, logger, volName)
+					if err != nil {
+						return fmt.Errorf("could not create volume: %w", err)
+					}
 
-				services[i].Volumes[j].SetVolName(volName)
+					service.Volumes[j].SetVolName(volName)
+				}
 			}
 		}
 	}
