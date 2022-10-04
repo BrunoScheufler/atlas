@@ -61,7 +61,7 @@ func Up(ctx context.Context, logger logrus.FieldLogger, version, cwd string, sta
 		return fmt.Errorf("could not topologically sort artifacts: %w", err)
 	}
 
-	err = buildArtifacts(ctx, logger, mergedFile, layers)
+	err = buildArtifacts(ctx, logger, mergedFile, layers, cwd)
 	if err != nil {
 		return fmt.Errorf("could not build artifacts: %w", err)
 	}
@@ -195,7 +195,7 @@ func getRequiredServices(stack atlasfile.StackConfig, file *atlasfile.Atlasfile)
 	return services
 }
 
-func buildArtifacts(ctx context.Context, logger logrus.FieldLogger, file *atlasfile.Atlasfile, layers [][]string) error {
+func buildArtifacts(ctx context.Context, logger logrus.FieldLogger, file *atlasfile.Atlasfile, layers [][]string, cwd string) error {
 	for _, layer := range layers {
 		g, ctx := errgroup.WithContext(ctx)
 
@@ -208,7 +208,7 @@ func buildArtifacts(ctx context.Context, logger logrus.FieldLogger, file *atlasf
 					return fmt.Errorf("could not find artifact %s", artifactName)
 				}
 
-				err := docker.BuildArtifact(ctx, logger, artifact)
+				err := docker.BuildArtifact(ctx, logger, artifact, cwd)
 				if err != nil {
 					return fmt.Errorf("could not build artifact %s: %w", artifact.Name, err)
 				}

@@ -10,19 +10,24 @@ import (
 	"strings"
 )
 
-func BuildArtifact(ctx context.Context, logger logrus.FieldLogger, artifact *atlasfile.ArtifactConfig) error {
+func BuildArtifact(ctx context.Context, logger logrus.FieldLogger, artifact *atlasfile.ArtifactConfig, cwd string) error {
 	artifactDir := filepath.Dir(artifact.GetDirpath())
 	if artifact.Build.Context != "" {
 		artifactDir = filepath.Join(artifactDir, artifact.Build.Context)
 	}
 
+	relPath, err := filepath.Rel(cwd, artifactDir)
+	if err != nil {
+		return fmt.Errorf("could not get relative path: %w", err)
+	}
+
 	logger.WithFields(logrus.Fields{
 		"artifact": artifact.Name,
-		"dirpath":  artifactDir,
+		"dirpath":  relPath,
 		"context":  artifact.Build.Context,
 	}).Debugf("Building artifact")
 
-	logger.WithField("dir", artifactDir).WithField("artifact", artifact.Name).Infoln("Building artifact")
+	logger.WithField("dir", relPath).WithField("artifact", artifact.Name).Infoln("Building artifact")
 
 	imageName := atlasfile.BuildImageName(artifact)
 
@@ -49,7 +54,7 @@ func BuildArtifact(ctx context.Context, logger logrus.FieldLogger, artifact *atl
 
 	args = append(args, artifactDir)
 
-	err := exec.RunCommand(ctx, logger, fmt.Sprintf("docker %s", strings.Join(args, " ")),
+	err = exec.RunCommand(ctx, logger, fmt.Sprintf("docker %s", strings.Join(args, " ")),
 		exec.RunCommandOptions{
 			Cwd:        artifactDir,
 			LogVisible: true,

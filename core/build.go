@@ -53,7 +53,7 @@ func Build(ctx context.Context, logger logrus.FieldLogger, version, cwd string, 
 		return fmt.Errorf("could not topologically sort artifacts: %w", err)
 	}
 
-	err = buildArtifacts(ctx, logger, mergedFile, layers)
+	err = buildArtifacts(ctx, logger, mergedFile, layers, cwd)
 	if err != nil {
 		return fmt.Errorf("could not build artifacts: %w", err)
 	}
