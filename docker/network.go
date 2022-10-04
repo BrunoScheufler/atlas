@@ -8,7 +8,7 @@ import (
 )
 
 func CreateNetwork(ctx context.Context, logger logrus.FieldLogger, name string) error {
-	err := exec.RunCommand(ctx, logger, fmt.Sprintf("docker network create %s", name), "", nil, false)
+	err := exec.RunCommand(ctx, logger, fmt.Sprintf("docker network create %s", name), exec.RunCommandOptions{})
 	if err != nil {
 		return fmt.Errorf("could not create network %s: %w", name, err)
 	}

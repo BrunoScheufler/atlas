@@ -6,7 +6,7 @@ import (
 )
 
 func IsRunning(ctx context.Context) bool {
-	err := exec.RunCommand(ctx, nil, "docker info", "", nil, false)
+	err := exec.RunCommand(ctx, nil, "docker info", exec.RunCommandOptions{})
 	if err != nil {
 		return false
 	}

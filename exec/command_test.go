@@ -7,7 +7,7 @@ import (
 )
 
 func TestRunCommand(t *testing.T) {
-	err := RunCommand(context.Background(), logrus.New(), "[ -n \"\"] && echo hello world", "/tmp", nil, false)
+	err := RunCommand(context.Background(), logrus.New(), "[ -n \"\"] && echo hello world", RunCommandOptions{})
 	if err != nil {
 		t.Error(err)
 	}

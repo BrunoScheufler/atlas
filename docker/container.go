@@ -111,7 +111,7 @@ func CreateServiceContainer(
 		args = append(args, service.Command...)
 	}
 
-	err = exec.RunCommand(ctx, logger, fmt.Sprintf("docker %s", strings.Join(args, " ")), "", nil, false)
+	err = exec.RunCommand(ctx, logger, fmt.Sprintf("docker %s", strings.Join(args, " ")), exec.RunCommandOptions{})
 	if err != nil {
 		return fmt.Errorf("could not create container %s: %w", containerName, err)
 	}
@@ -120,7 +120,7 @@ func CreateServiceContainer(
 		for _, stackName := range stackService.JoinStackNetworks {
 			netName := file.GetStack(stackName).GetNetworkName()
 
-			err = exec.RunCommand(ctx, logger, fmt.Sprintf("docker network connect %s %s", netName, containerName), "", nil, false)
+			err = exec.RunCommand(ctx, logger, fmt.Sprintf("docker network connect %s %s", netName, containerName), exec.RunCommandOptions{})
 			if err != nil {
 				return fmt.Errorf("could not connect container %s to network %s: %w", containerName, netName, err)
 			}

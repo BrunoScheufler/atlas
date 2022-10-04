@@ -10,21 +10,47 @@ import (
 	"os/exec"
 )
 
-func RunCommand(ctx context.Context, logger logrus.FieldLogger, command string, cwd string, env []string, logVisible bool) error {
+type PrefixWriter struct {
+	w      io.Writer
+	prefix string
+}
+
+func (pw PrefixWriter) Write(p []byte) (n int, err error) {
+	lines := bytes.Split(p, []byte{'\n'})
+	for _, line := range lines {
+		if len(line) > 0 {
+			_, err = fmt.Fprintf(pw.w, "%s%s", pw.prefix, line)
+			if err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	return len(p), nil
+}
+
+type RunCommandOptions struct {
+	Cwd string
+	Env []string
+
+	LogVisible bool
+	LogPrefix  string
+}
+
+func RunCommand(ctx context.Context, logger logrus.FieldLogger, command string, options RunCommandOptions) error {
 	cmd := exec.CommandContext(ctx, "bash", "-c", command)
 
 	outBuf := &bytes.Buffer{}
 	errBuf := &bytes.Buffer{}
 
 	var wo io.Writer = outBuf
-	if logVisible {
-		wo = io.MultiWriter(outBuf, os.Stdout)
-
+	if options.LogVisible {
+		wo = io.MultiWriter(outBuf, PrefixWriter{os.Stdout, options.LogPrefix})
 	}
 
 	var we io.Writer = errBuf
-	if logVisible {
-		we = io.MultiWriter(errBuf, os.Stderr)
+	if options.LogVisible {
+		we = io.MultiWriter(errBuf, PrefixWriter{os.Stderr, options.LogPrefix})
 	}
 
 	cmd.Stdout = wo
@@ -32,9 +58,9 @@ func RunCommand(ctx context.Context, logger logrus.FieldLogger, command string, 
 
 	cmd.Env = os.Environ()
 
-	env = append(os.Environ(), env...)
+	env := append(os.Environ(), options.Env...)
 	cmd.Env = env
-	cmd.Dir = cwd
+	cmd.Dir = options.Cwd
 
 	err := cmd.Run()
 	if err != nil {
@@ -45,7 +71,7 @@ func RunCommand(ctx context.Context, logger logrus.FieldLogger, command string, 
 
 		fields := logrus.Fields{
 			"command": commandStr,
-			"cwd":     cwd,
+			"cwd":     options.Cwd,
 			"stdout":  outBuf.String(),
 			"stderr":  errBuf.String(),
 		}

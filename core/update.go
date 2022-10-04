@@ -41,12 +41,12 @@ func Update(ctx context.Context, logger logrus.FieldLogger, cwd string) error {
 			bar.Describe(fmt.Sprintf("Updating Go Atlasfile (%s)", relPath))
 
 			// Run go get -u && go mo tidy
-			err := exec.RunCommand(ctx, logger, "go get -u", path, nil, true)
+			err := exec.RunCommand(ctx, logger, "go get -u", exec.RunCommandOptions{Cwd: path, LogPrefix: relPath})
 			if err != nil {
 				return fmt.Errorf("could not run go get -u: %w", err)
 			}
 
-			err = exec.RunCommand(ctx, logger, "go mod tidy", path, nil, true)
+			err = exec.RunCommand(ctx, logger, "go mod tidy", exec.RunCommandOptions{Cwd: path, LogPrefix: relPath})
 			if err != nil {
 				return fmt.Errorf("could not run go mod tidy: %w", err)
 			}

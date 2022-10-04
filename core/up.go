@@ -7,6 +7,7 @@ import (
 	"github.com/brunoscheufler/atlas/docker"
 	"github.com/schollz/progressbar/v3"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 	"math/rand"
 	"time"
 )
@@ -213,27 +214,30 @@ func getRequiredServices(stack atlasfile.StackConfig, file *atlasfile.Atlasfile)
 
 func buildArtifacts(ctx context.Context, logger logrus.FieldLogger, file *atlasfile.Atlasfile, layers [][]string) error {
 	for _, layer := range layers {
-		bar := progressbar.NewOptions(len(layer), progressbar.OptionSetDescription("Building artifacts"), progressbar.OptionClearOnFinish())
+		g, ctx := errgroup.WithContext(ctx)
 
-		// TODO Run in parallel
 		for _, artifactName := range layer {
-			artifact := file.GetArtifact(artifactName)
-			if artifact == nil {
-				return fmt.Errorf("could not find artifact %s", artifactName)
-			}
+			artifactName := artifactName
 
-			bar.Describe(fmt.Sprintf("Building artifact %s", artifactName))
+			g.Go(func() error {
+				artifact := file.GetArtifact(artifactName)
+				if artifact == nil {
+					return fmt.Errorf("could not find artifact %s", artifactName)
+				}
 
-			err := docker.BuildArtifact(ctx, logger, artifact)
-			if err != nil {
-				return fmt.Errorf("could not build artifact %s: %w", artifact.Name, err)
-			}
+				err := docker.BuildArtifact(ctx, logger, artifact)
+				if err != nil {
+					return fmt.Errorf("could not build artifact %s: %w", artifact.Name, err)
+				}
 
-			_ = bar.Add(1)
+				return nil
+			})
 		}
 
-		_ = bar.Clear()
-		_ = bar.Close()
+		err := g.Wait()
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
