@@ -22,7 +22,7 @@ var rootCmd = &cobra.Command{
 func createLogger() logrus.FieldLogger {
 	logLevelEnv := os.Getenv("LOG_LEVEL")
 	if logLevelEnv == "" {
-		logLevelEnv = "warn"
+		logLevelEnv = "info"
 	}
 
 	parsedLevel, err := logrus.ParseLevel(logLevelEnv)
@@ -42,6 +42,7 @@ func main() {
 
 	prepareUpCmd(rootCmd)
 	prepareDownCmd(rootCmd)
+	prepareBuildCmd(rootCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(updateCmd)
 	rootCmd.AddCommand(versionCmd)

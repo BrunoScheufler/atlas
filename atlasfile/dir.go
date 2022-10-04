@@ -8,7 +8,6 @@ import (
 	"github.com/brunoscheufler/atlas/helper"
 	"github.com/brunoscheufler/atlas/protobuf"
 	"github.com/cenkalti/backoff/v4"
-	"github.com/schollz/progressbar/v3"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -92,8 +91,6 @@ func Collect(ctx context.Context, logger logrus.FieldLogger, version, cwd string
 
 	collectedFiles := make([]Atlasfile, len(paths))
 
-	bar := progressbar.NewOptions(len(paths), progressbar.OptionSetDescription("Reading Atlasfiles"), progressbar.OptionClearOnFinish())
-
 	g, ctx := errgroup.WithContext(ctx)
 
 	for i, path := range paths {
@@ -102,17 +99,16 @@ func Collect(ctx context.Context, logger logrus.FieldLogger, version, cwd string
 			return nil, fmt.Errorf("could not find relative path: %w", err)
 		}
 
-		i, path, bar, relpath := i, path, bar, relpath // https://golang.org/doc/faq#closures_and_goroutines
+		i, path, relpath := i, path, relpath // https://golang.org/doc/faq#closures_and_goroutines
 
 		g.Go(func() error {
-			bar.Describe(fmt.Sprintf("Reading Atlasfile %s", relpath))
+			logger.Infoln(fmt.Sprintf("Reading Atlasfile %s", relpath))
 
 			file, err := readAtlasFile(ctx, logger, version, path)
 			if err != nil {
 				return fmt.Errorf("could not read .atlas file: %w", err)
 			}
 			collectedFiles[i] = *file
-			_ = bar.Add(1)
 			return nil
 		})
 
@@ -120,9 +116,6 @@ func Collect(ctx context.Context, logger logrus.FieldLogger, version, cwd string
 	if err := g.Wait(); err != nil {
 		return nil, err
 	}
-
-	_ = bar.Clear()
-	_ = bar.Close()
 
 	return mergeAtlasFiles(collectedFiles), nil
 }
@@ -301,4 +294,21 @@ func mergeAtlasFiles(files []Atlasfile) *Atlasfile {
 	}
 
 	return final
+}
+
+func (a *Atlasfile) GetStacks(stackNames []string) ([]StackConfig, error) {
+	var stacks []StackConfig
+	if stackNames != nil {
+		for _, name := range stackNames {
+			stack := a.GetStack(name)
+			if stack == nil {
+				return nil, fmt.Errorf("could not find stack %s", name)
+			}
+			stacks = append(stacks, *stack)
+		}
+	} else {
+		stacks = a.Stacks
+	}
+
+	return stacks, nil
 }

@@ -6,7 +6,6 @@ import (
 	"github.com/brunoscheufler/atlas/atlasfile"
 	"github.com/brunoscheufler/atlas/exec"
 	"github.com/brunoscheufler/atlas/helper"
-	"github.com/schollz/progressbar/v3"
 	"github.com/sirupsen/logrus"
 	"path/filepath"
 )
@@ -23,13 +22,6 @@ func Update(ctx context.Context, logger logrus.FieldLogger, cwd string) error {
 		return fmt.Errorf("could not glob for .atlas directories: %w", err)
 	}
 
-	bar := progressbar.NewOptions(len(paths), progressbar.OptionSetDescription("Updating Atlasfiles"), progressbar.OptionClearOnFinish())
-	defer func() {
-		_ = bar.Finish()
-		_ = bar.Clear()
-		_ = bar.Close()
-	}()
-
 	for _, path := range paths {
 		relPath, err := filepath.Rel(cwd, path)
 		if err != nil {
@@ -38,7 +30,7 @@ func Update(ctx context.Context, logger logrus.FieldLogger, cwd string) error {
 
 		// Check if go.mod exists
 		if helper.FileExists(filepath.Join(path, "go.mod")) {
-			bar.Describe(fmt.Sprintf("Updating Go Atlasfile (%s)", relPath))
+			logger.Infoln(fmt.Sprintf("Updating Go Atlasfile (%s)", relPath))
 
 			// Run go get -u && go mo tidy
 			err := exec.RunCommand(ctx, logger, "go get -u", exec.RunCommandOptions{Cwd: path, LogPrefix: relPath})
@@ -50,8 +42,6 @@ func Update(ctx context.Context, logger logrus.FieldLogger, cwd string) error {
 			if err != nil {
 				return fmt.Errorf("could not run go mod tidy: %w", err)
 			}
-
-			_ = bar.Add(1)
 
 			continue
 		}

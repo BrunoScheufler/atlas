@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/logrusorgru/aurora/v3"
 	"github.com/sirupsen/logrus"
 	"io"
+	"math/rand"
 	"os"
 	"os/exec"
+	"time"
 )
 
 type PrefixWriter struct {
@@ -15,11 +18,35 @@ type PrefixWriter struct {
 	prefix string
 }
 
+func randomColor() aurora.Color {
+	colors := []aurora.Color{
+		aurora.BrightFg | aurora.GreenFg,
+		aurora.BrightFg | aurora.BlueFg,
+		aurora.BrightFg | aurora.MagentaFg,
+		aurora.BrightFg | aurora.CyanFg,
+		aurora.BrightFg | aurora.YellowFg,
+		aurora.BrightFg | aurora.RedFg,
+		aurora.BrightFg | aurora.WhiteFg,
+	}
+
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+	return colors[rnd.Intn(len(colors))]
+}
+
+func NewPrefixWriter(w io.Writer, prefix string) *PrefixWriter {
+	if prefix != "" {
+		color := randomColor()
+		prefix = fmt.Sprintf("%s: ", aurora.Colorize(prefix, color))
+	}
+
+	return &PrefixWriter{w: w, prefix: prefix}
+}
+
 func (pw PrefixWriter) Write(p []byte) (n int, err error) {
 	lines := bytes.Split(p, []byte{'\n'})
 	for _, line := range lines {
 		if len(line) > 0 {
-			_, err = fmt.Fprintf(pw.w, "%s%s", pw.prefix, line)
+			_, err = fmt.Fprintf(pw.w, "%s%s\n", pw.prefix, line)
 			if err != nil {
 				return 0, err
 			}
@@ -45,12 +72,12 @@ func RunCommand(ctx context.Context, logger logrus.FieldLogger, command string, 
 
 	var wo io.Writer = outBuf
 	if options.LogVisible {
-		wo = io.MultiWriter(outBuf, PrefixWriter{os.Stdout, options.LogPrefix})
+		wo = io.MultiWriter(outBuf, NewPrefixWriter(os.Stdout, options.LogPrefix))
 	}
 
 	var we io.Writer = errBuf
 	if options.LogVisible {
-		we = io.MultiWriter(errBuf, PrefixWriter{os.Stderr, options.LogPrefix})
+		we = io.MultiWriter(errBuf, NewPrefixWriter(os.Stderr, options.LogPrefix))
 	}
 
 	cmd.Stdout = wo
