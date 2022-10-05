@@ -66,9 +66,6 @@ type ServiceConfig struct {
 }
 
 type StackService struct {
-	// stores mapping from configured volume name to actual per-stack Docker volume name
-	volumeNames map[string]string
-
 	Name              string            `json:"name"`
 	ServiceName       string            `json:"serviceName"`
 	Environment       map[string]string `json:"environment"`

@@ -1,9 +1,12 @@
 package helper
 
 import (
+	"fmt"
 	"github.com/joho/godotenv"
+	"math/rand"
 	"net"
 	"os"
+	"time"
 )
 
 func ReadEnvFile(path string) (map[string]string, error) {
@@ -28,4 +31,15 @@ func FreePort() (int, error) {
 func FileExists(path string) bool {
 	_, err := os.Stat(path)
 	return !os.IsNotExist(err)
+}
+
+func RandomizedName(name string) string {
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+	digits := 4
+	var suffix string
+	for i := 0; i < digits; i++ {
+		suffix += string(rune(rnd.Intn(10) + 48))
+	}
+
+	return fmt.Sprintf("%s-%s", name, suffix)
 }

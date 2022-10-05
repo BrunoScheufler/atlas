@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"github.com/brunoscheufler/atlas/atlasfile"
 	"github.com/brunoscheufler/atlas/docker"
+	"github.com/brunoscheufler/atlas/helper"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
-	"math/rand"
-	"time"
 )
 
 func Up(ctx context.Context, logger logrus.FieldLogger, version, cwd string, stackNames []string) error {
@@ -67,7 +66,7 @@ func Up(ctx context.Context, logger logrus.FieldLogger, version, cwd string, sta
 	}
 
 	for i, stack := range stacks {
-		netName := randomizedName(fmt.Sprintf("atlas-%s", stack.Name))
+		netName := helper.RandomizedName(fmt.Sprintf("atlas-%s", stack.Name))
 		stacks[i].SetNetworkName(netName)
 
 		err = docker.CreateNetwork(ctx, logger, netName)
@@ -76,7 +75,7 @@ func Up(ctx context.Context, logger logrus.FieldLogger, version, cwd string, sta
 		}
 	}
 
-	err = ensureVolumes(ctx, logger, stacks, mergedFile)
+	ensuredVolumes, err := docker.EnsureVolumes(ctx, logger, stacks, mergedFile)
 	if err != nil {
 		return fmt.Errorf("could not ensure volumes: %w", err)
 	}
@@ -84,7 +83,7 @@ func Up(ctx context.Context, logger logrus.FieldLogger, version, cwd string, sta
 	for i := range stacks {
 		logger.Infof("Launching stack %s\n", stacks[i].Name)
 
-		err := startStack(ctx, logger, &stacks[i], mergedFile, services)
+		err := startStack(ctx, logger, &stacks[i], mergedFile, services, ensuredVolumes)
 		if err != nil {
 			return fmt.Errorf("could not start stack %q: %w", stacks[i].Name, err)
 		}
@@ -95,16 +94,16 @@ func Up(ctx context.Context, logger logrus.FieldLogger, version, cwd string, sta
 	return nil
 }
 
-func startStack(ctx context.Context, logger logrus.FieldLogger, stack *atlasfile.StackConfig, file *atlasfile.Atlasfile, services []atlasfile.ServiceConfig) error {
+func startStack(ctx context.Context, logger logrus.FieldLogger, stack *atlasfile.StackConfig, file *atlasfile.Atlasfile, services []atlasfile.ServiceConfig, ensuredVolumes docker.EnsuredVolumes) error {
 	for j := range stack.Services {
 		stackService := &stack.Services[j]
 		service := file.GetService(stackService.Name)
 
 		logger.WithField("stack", stack.Name).Infoln(fmt.Sprintf("Starting %s", services[j].Name))
 
-		containerName := randomizedName(fmt.Sprintf("atlas-%s-%s", stack.Name, service.Name))
+		containerName := helper.RandomizedName(fmt.Sprintf("atlas-%s-%s", stack.Name, service.Name))
 
-		err := docker.CreateServiceContainer(ctx, logger, stack, service, stackService, file, containerName)
+		err := docker.CreateServiceContainer(ctx, logger, stack, service, stackService, file, ensuredVolumes, containerName)
 		if err != nil {
 			return fmt.Errorf("could not create service container: %w", err)
 		}
@@ -140,42 +139,6 @@ func getImmediateArtifactsNeededByServices(services []atlasfile.ServiceConfig, f
 	}
 
 	return artifacts, nil
-}
-
-// ensureVolumes creates volumes where needed (volumes are created per stack and stored in the stack service)
-func ensureVolumes(ctx context.Context, logger logrus.FieldLogger, stacks []atlasfile.StackConfig, a *atlasfile.Atlasfile) error {
-	for i := range stacks {
-		stack := &stacks[i]
-		for j := range stack.Services {
-			stackService := &stack.Services[j]
-			service := a.GetService(stackService.Name)
-			for k := range service.Volumes {
-				volume := &service.Volumes[k]
-				if volume.IsVolume {
-					// Create volume *per stack*
-					volName := randomizedName(fmt.Sprintf("atlas-%s-%s-%s", stack.Name, service.Name, volume.HostPathOrVolumeName))
-					err := docker.CreateVolume(ctx, logger, volName)
-					if err != nil {
-						return fmt.Errorf("could not create volume: %w", err)
-					}
-
-					stackService.SetVolumeName(volume.HostPathOrVolumeName, volName)
-				}
-			}
-		}
-	}
-	return nil
-}
-
-func randomizedName(name string) string {
-	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
-	digits := 4
-	var suffix string
-	for i := 0; i < digits; i++ {
-		suffix += string(rune(rnd.Intn(10) + 48))
-	}
-
-	return fmt.Sprintf("%s-%s", name, suffix)
 }
 
 func getRequiredServicesForStacks(stacks []atlasfile.StackConfig, file *atlasfile.Atlasfile) ([]atlasfile.ServiceConfig, error) {

@@ -18,6 +18,7 @@ func CreateServiceContainer(
 	service *atlasfile.ServiceConfig,
 	stackService *atlasfile.StackService,
 	file *atlasfile.Atlasfile,
+	ensuredVolumes EnsuredVolumes,
 	containerName string,
 ) error {
 	args := []string{
@@ -69,7 +70,7 @@ func CreateServiceContainer(
 
 	if service.Volumes != nil {
 		for _, volume := range service.Volumes {
-			volName := volume.GetVolumeNameOrHostPath(filepath.Dir(service.GetDirpath()), stackService)
+			volName := volume.GetVolumeNameOrHostPath(filepath.Dir(service.GetDirpath()), ensuredVolumes.Get(stack.Name, service.Name, volume.HostPathOrVolumeName))
 			args = append(args, "-v", fmt.Sprintf("%s:%s", volName, volume.ContainerPath))
 		}
 	}
