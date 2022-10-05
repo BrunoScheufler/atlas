@@ -69,7 +69,7 @@ func CreateServiceContainer(
 
 	if service.Volumes != nil {
 		for _, volume := range service.Volumes {
-			volName := volume.GetVolumeNameOrHostPath(filepath.Dir(service.GetDirpath()))
+			volName := volume.GetVolumeNameOrHostPath(filepath.Dir(service.GetDirpath()), stackService)
 			args = append(args, "-v", fmt.Sprintf("%s:%s", volName, volume.ContainerPath))
 		}
 	}

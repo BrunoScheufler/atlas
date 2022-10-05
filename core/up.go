@@ -96,7 +96,6 @@ func Up(ctx context.Context, logger logrus.FieldLogger, version, cwd string, sta
 }
 
 func startStack(ctx context.Context, logger logrus.FieldLogger, stack *atlasfile.StackConfig, file *atlasfile.Atlasfile, services []atlasfile.ServiceConfig) error {
-
 	for j := range stack.Services {
 		stackService := &stack.Services[j]
 		service := file.GetService(stackService.Name)
@@ -143,19 +142,24 @@ func getImmediateArtifactsNeededByServices(services []atlasfile.ServiceConfig, f
 	return artifacts, nil
 }
 
+// ensureVolumes creates volumes where needed (volumes are created per stack and stored in the stack service)
 func ensureVolumes(ctx context.Context, logger logrus.FieldLogger, stacks []atlasfile.StackConfig, a *atlasfile.Atlasfile) error {
-	for _, stack := range stacks {
-		for _, service := range stack.Services {
-			service := a.GetService(service.Name)
-			for j, volume := range service.Volumes {
+	for i := range stacks {
+		stack := &stacks[i]
+		for j := range stack.Services {
+			stackService := &stack.Services[j]
+			service := a.GetService(stackService.Name)
+			for k := range service.Volumes {
+				volume := &service.Volumes[k]
 				if volume.IsVolume {
+					// Create volume *per stack*
 					volName := randomizedName(fmt.Sprintf("atlas-%s-%s-%s", stack.Name, service.Name, volume.HostPathOrVolumeName))
 					err := docker.CreateVolume(ctx, logger, volName)
 					if err != nil {
 						return fmt.Errorf("could not create volume: %w", err)
 					}
 
-					service.Volumes[j].SetVolName(volName)
+					stackService.SetVolumeName(volume.HostPathOrVolumeName, volName)
 				}
 			}
 		}
