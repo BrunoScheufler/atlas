@@ -81,9 +81,9 @@ func BuildImageName(artifact *ArtifactConfig) string {
 	return fmt.Sprintf("%s:%s", imageName, tagName)
 }
 
-func (c *VolumeConfig) GetVolumeNameOrHostPath(cwd string, stackService *StackService) string {
+func (c *VolumeConfig) GetVolumeNameOrHostPath(cwd string, physicalVolName string) string {
 	if c.IsVolume {
-		return stackService.GetVolumeName(c.volName)
+		return physicalVolName
 	}
 
 	if filepath.IsAbs(c.HostPathOrVolumeName) {
@@ -158,20 +158,4 @@ func (a *Atlasfile) GetServiceImage(service *ServiceConfig) (string, error) {
 	}
 
 	return BuildImageName(artifact), nil
-}
-
-func (s *StackService) SetVolumeName(volName, name string) {
-	if s.volumeNames == nil {
-		s.volumeNames = make(map[string]string)
-	}
-
-	s.volumeNames[volName] = name
-}
-
-func (s *StackService) GetVolumeName(name string) string {
-	if s.volumeNames == nil {
-		return ""
-	}
-
-	return s.volumeNames[name]
 }
