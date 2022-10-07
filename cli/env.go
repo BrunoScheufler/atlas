@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"github.com/brunoscheufler/atlas/core"
 	"github.com/spf13/cobra"
 	"os"
@@ -13,12 +12,7 @@ func prepareEnvCmd(rootCmd *cobra.Command) {
 	var envCmd = &cobra.Command{
 		Use:   "env",
 		Short: "Export service environment variables to .env.local",
-		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) != 1 {
-				return errors.New("requires at least one arg")
-			}
-			return nil
-		},
+		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			logger := createLogger()
 
