@@ -64,6 +64,10 @@ func Env(ctx context.Context, logger logrus.FieldLogger, version, cwd string, st
 		envVars[k] = v
 	}
 
+	for k, v := range stackService.LocalEnvironment {
+		envVars[k] = v
+	}
+
 	sorted := mapToSortedSlice(envVars)
 
 	var output string
