@@ -41,6 +41,15 @@ func (s *StackConfig) GetNetworkName() string {
 	return s.networkName
 }
 
+func (s *StackConfig) GetService(serviceName string) *StackService {
+	for i, service := range s.Services {
+		if service.Name == serviceName {
+			return &s.Services[i]
+		}
+	}
+	return nil
+}
+
 func (s *StackConfig) SetNetworkName(networkName string) {
 	s.networkName = networkName
 }

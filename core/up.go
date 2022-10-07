@@ -128,7 +128,6 @@ func getImmediateArtifactsNeededByServices(services []atlasfile.ServiceConfig, f
 			artifactName = service.Artifact.Name
 		} else {
 			artifactName = service.Artifact.Artifact.Name
-
 		}
 
 		artifact := file.GetArtifact(artifactName)
