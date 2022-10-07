@@ -66,14 +66,18 @@ type ServiceConfig struct {
 }
 
 type StackService struct {
-	// stores mapping from configured volume name to actual per-stack Docker volume name
-	volumeNames map[string]string
+	Name        string `json:"name"`
+	ServiceName string `json:"serviceName"`
 
-	Name              string            `json:"name"`
-	ServiceName       string            `json:"serviceName"`
-	Environment       map[string]string `json:"environment"`
-	JoinStackNetworks []string          `json:"joinStackNetworks"`
-	ExposePorts       []PortExpose      `json:"exposePorts"`
+	// Environment overwrites environment variables specified in ServiceConfig.Environment and ServiceConfig.EnvironmentFiles
+	Environment map[string]string `json:"environment"`
+
+	JoinStackNetworks []string     `json:"joinStackNetworks"`
+	ExposePorts       []PortExpose `json:"exposePorts"`
+
+	// LocalEnvironment specifies variables that overwrite Environment, ServiceConfig.Environment and ServiceConfig.EnvironmentFiles
+	// when running atlas env (usually URLs that should be rewritten to localhost when running a service outside of Docker)
+	LocalEnvironment map[string]string `json:"localEnvironment"`
 }
 
 type StackConfig struct {
