@@ -6,29 +6,31 @@ import (
 	"os"
 )
 
-var downCmd = &cobra.Command{
-	Use:   "down",
-	Short: "Stop all running service containers and remove volumes and networks",
-	Run: func(cmd *cobra.Command, args []string) {
-		var stacks []string
-		cmd.Flags().StringArrayVarP(&stacks, "stack", "s", nil, "Stack names (required)")
-
-		logger := createLogger()
-		cwd, err := os.Getwd()
-		if err != nil {
-			cmd.PrintErrf("could not create logger: %s", err.Error())
-			os.Exit(1)
-		}
-
-		err = atlas.Down(cmd.Context(), logger, cwd, stacks)
-		if err != nil {
-			cmd.PrintErrf("could not up stack: %s", err.Error())
-			os.Exit(1)
-		}
-	},
-}
-
 func prepareDownCmd(rootCmd *cobra.Command) {
-	_ = downCmd.MarkFlagRequired("stack")
+	var all bool
+	var stacks []string
+
+	var downCmd = &cobra.Command{
+		Use:   "down",
+		Short: "Stop running service containers and remove volumes and networks for specified or all stacks",
+		Run: func(cmd *cobra.Command, args []string) {
+			logger := createLogger()
+			cwd, err := os.Getwd()
+			if err != nil {
+				cmd.PrintErrf("could not create logger: %s", err.Error())
+				os.Exit(1)
+			}
+
+			err = atlas.Down(cmd.Context(), logger, cwd, version, stacks, all)
+			if err != nil {
+				cmd.PrintErrf("could not up stack: %s", err.Error())
+				os.Exit(1)
+			}
+		},
+	}
+
+	downCmd.Flags().StringArrayVarP(&stacks, "stacks", "s", []string{}, "Stack names")
+	downCmd.Flags().BoolVarP(&all, "all", "a", false, "Clean up all containers and networks")
+
 	rootCmd.AddCommand(downCmd)
 }

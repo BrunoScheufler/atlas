@@ -6,12 +6,12 @@ import (
 	"os"
 )
 
-func prepareBuildCmd(rootCmd *cobra.Command) {
+func preparePsCmd(rootCmd *cobra.Command) {
 	var stacks []string
 
-	var buildCmd = &cobra.Command{
-		Use:   "build",
-		Short: "Build all artifacts required for stacks",
+	var psCmd = &cobra.Command{
+		Use:   "ps",
+		Short: "Shows status of running containers",
 		Run: func(cmd *cobra.Command, args []string) {
 			logger := createLogger()
 			cwd, err := os.Getwd()
@@ -20,7 +20,7 @@ func prepareBuildCmd(rootCmd *cobra.Command) {
 				os.Exit(1)
 			}
 
-			err = atlas.Build(cmd.Context(), logger, version, cwd, stacks)
+			err = atlas.Ps(cmd.Context(), logger, cwd, version, stacks)
 			if err != nil {
 				cmd.PrintErrf("could not build stacks: %s", err.Error())
 				os.Exit(1)
@@ -28,7 +28,7 @@ func prepareBuildCmd(rootCmd *cobra.Command) {
 		},
 	}
 
-	buildCmd.Flags().StringArrayVarP(&stacks, "stacks", "s", nil, "Stack names")
-	_ = buildCmd.MarkFlagRequired("stacks")
-	rootCmd.AddCommand(buildCmd)
+	psCmd.Flags().StringArrayVarP(&stacks, "stacks", "s", []string{}, "Stack names")
+
+	rootCmd.AddCommand(psCmd)
 }

@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -49,6 +50,11 @@ func FindAtlasDirectories(dir string) ([]string, error) {
 	}
 
 	shouldBeSkipped := func(path string) bool {
+		// if directory starts with . don't continue walking (e.g. .git)
+		if strings.HasPrefix(filepath.Base(path), ".") {
+			return true
+		}
+
 		for _, skipDir := range skipDirs {
 			if filepath.Base(path) == skipDir {
 				return true
@@ -62,12 +68,12 @@ func FindAtlasDirectories(dir string) ([]string, error) {
 			return err
 		}
 
-		if info.IsDir() && shouldBeSkipped(path) {
+		if info.IsDir() && info.Name() == ".atlas" {
+			files = append(files, path)
 			return filepath.SkipDir
 		}
 
-		if info.IsDir() && info.Name() == ".atlas" {
-			files = append(files, path)
+		if info.IsDir() && shouldBeSkipped(path) {
 			return filepath.SkipDir
 		}
 

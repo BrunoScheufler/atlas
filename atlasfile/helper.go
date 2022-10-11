@@ -37,10 +37,6 @@ func (a *Atlasfile) GetStack(name string) *StackConfig {
 	return nil
 }
 
-func (s *StackConfig) GetNetworkName() string {
-	return s.networkName
-}
-
 func (s *StackConfig) GetService(serviceName string) *StackService {
 	for i, service := range s.Services {
 		if service.Name == serviceName {
@@ -50,16 +46,16 @@ func (s *StackConfig) GetService(serviceName string) *StackService {
 	return nil
 }
 
-func (s *StackConfig) SetNetworkName(networkName string) {
-	s.networkName = networkName
-}
-
 func (s *StackConfig) SetContainerName(service, containerName string) {
 	if s.containerNames == nil {
 		s.containerNames = make(map[string]string)
 	}
 
 	s.containerNames[service] = containerName
+}
+
+func (s *StackConfig) GetContainerName(service string) string {
+	return s.containerNames[service]
 }
 
 // GetDirpath returns path of .atlas directory service was declared in
@@ -91,11 +87,6 @@ func (c *VolumeConfig) GetVolumeNameOrHostPath(cwd string, physicalVolName strin
 	}
 
 	return filepath.Join(cwd, c.HostPathOrVolumeName)
-}
-
-func (c *VolumeConfig) SetVolName(name string) string {
-	c.volName = name
-	return name
 }
 
 func GetServicePort(requests []PortRequest, port int) *PortRequest {

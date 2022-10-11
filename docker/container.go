@@ -6,9 +6,13 @@ import (
 	"github.com/brunoscheufler/atlas/atlasfile"
 	"github.com/brunoscheufler/atlas/exec"
 	"github.com/brunoscheufler/atlas/helper"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/client"
 	"github.com/sirupsen/logrus"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 func CreateServiceContainer(
@@ -19,6 +23,7 @@ func CreateServiceContainer(
 	stackService *atlasfile.StackService,
 	file *atlasfile.Atlasfile,
 	ensuredVolumes EnsuredVolumes,
+	ensuredNetworks EnsuredNetworks,
 	containerName string,
 ) error {
 	args := []string{
@@ -75,8 +80,9 @@ func CreateServiceContainer(
 		}
 	}
 
-	if stack.GetNetworkName() != "" {
-		args = append(args, "--network", stack.GetNetworkName())
+	netName := ensuredNetworks.Get(stack.Name)
+	if netName != "" {
+		args = append(args, "--network", netName)
 	}
 
 	if stackService.ExposePorts != nil {
@@ -119,13 +125,81 @@ func CreateServiceContainer(
 
 	if stackService.JoinStackNetworks != nil {
 		for _, stackName := range stackService.JoinStackNetworks {
-			netName := file.GetStack(stackName).GetNetworkName()
+			netName := ensuredNetworks.Get(stackName)
+			if netName == "" {
+				return fmt.Errorf("could not find network for stack %s", stackName)
+			}
 
 			err = exec.RunCommand(ctx, logger, fmt.Sprintf("docker network connect %s %s", netName, containerName), exec.RunCommandOptions{})
 			if err != nil {
 				return fmt.Errorf("could not connect container %s to network %s: %w", containerName, netName, err)
 			}
 		}
+	}
+
+	return nil
+}
+
+type ContainerInfos struct {
+	FetchedAt string `json:"fetchedAt"`
+	Id        string `json:"id"`
+	Name      string `json:"name"`
+	Status    string `json:"status"`
+	State     string `json:"state"`
+}
+
+func GetContainerInfo(ctx context.Context, containerName string) (*ContainerInfos, error) {
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		return nil, fmt.Errorf("could not create docker client: %w", err)
+	}
+
+	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{
+		All: true,
+		Filters: filters.NewArgs(
+			filters.Arg("name", containerName),
+		),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("could not list containers: %w", err)
+	}
+
+	if len(containers) == 0 {
+		return nil, nil
+	}
+
+	return &ContainerInfos{
+		FetchedAt: time.Now().Format(time.RFC3339),
+		Id:        containers[0].ID,
+		Name:      containers[0].Names[0],
+		Status:    containers[0].Status,
+		State:     containers[0].State,
+	}, nil
+}
+
+func StartContainer(ctx context.Context, containerName string) error {
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		return fmt.Errorf("could not create docker client: %w", err)
+	}
+
+	err = cli.ContainerStart(ctx, containerName, types.ContainerStartOptions{})
+	if err != nil {
+		return fmt.Errorf("could not start container %s: %w", containerName, err)
+	}
+
+	return nil
+}
+
+func StopContainer(ctx context.Context, containerName string) error {
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		return fmt.Errorf("could not create docker client: %w", err)
+	}
+
+	err = cli.ContainerStop(ctx, containerName, nil)
+	if err != nil {
+		return fmt.Errorf("could not stop container %s: %w", containerName, err)
 	}
 
 	return nil
