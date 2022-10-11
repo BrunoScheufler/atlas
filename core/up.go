@@ -65,14 +65,9 @@ func Up(ctx context.Context, logger logrus.FieldLogger, version, cwd string, sta
 		return fmt.Errorf("could not build artifacts: %w", err)
 	}
 
-	for i, stack := range stacks {
-		netName := helper.RandomizedName(fmt.Sprintf("atlas-%s", stack.Name))
-		stacks[i].SetNetworkName(netName)
-
-		err = docker.CreateNetwork(ctx, logger, netName)
-		if err != nil {
-			return fmt.Errorf("could not create network: %w", err)
-		}
+	ensuredNetworks, err := docker.EnsureNetworks(ctx, logger, stacks, mergedFile)
+	if err != nil {
+		return fmt.Errorf("could not ensure networks: %w", err)
 	}
 
 	ensuredVolumes, err := docker.EnsureVolumes(ctx, logger, stacks, mergedFile)
@@ -83,13 +78,13 @@ func Up(ctx context.Context, logger logrus.FieldLogger, version, cwd string, sta
 	for i := range stacks {
 		logger.Infof("Launching stack %s\n", stacks[i].Name)
 
-		err := startStack(ctx, logger, &stacks[i], mergedFile, services, ensuredVolumes)
+		err := startStack(ctx, logger, &stacks[i], mergedFile, services, ensuredVolumes, ensuredNetworks)
 		if err != nil {
 			return fmt.Errorf("could not start stack %q: %w", stacks[i].Name, err)
 		}
 	}
 
-	err = writeState(cwd, version, stacks, ensuredVolumes)
+	err = writeState(ctx, cwd, version, stacks, ensuredVolumes, ensuredNetworks)
 	if err != nil {
 		return fmt.Errorf("could not write state: %w", err)
 	}
@@ -97,7 +92,15 @@ func Up(ctx context.Context, logger logrus.FieldLogger, version, cwd string, sta
 	return nil
 }
 
-func startStack(ctx context.Context, logger logrus.FieldLogger, stack *atlasfile.StackConfig, file *atlasfile.Atlasfile, services []atlasfile.ServiceConfig, ensuredVolumes docker.EnsuredVolumes) error {
+func startStack(
+	ctx context.Context,
+	logger logrus.FieldLogger,
+	stack *atlasfile.StackConfig,
+	file *atlasfile.Atlasfile,
+	services []atlasfile.ServiceConfig,
+	ensuredVolumes docker.EnsuredVolumes,
+	ensuredNetworks docker.EnsuredNetworks,
+) error {
 	for j := range stack.Services {
 		stackService := &stack.Services[j]
 		service := file.GetService(stackService.Name)
@@ -106,7 +109,7 @@ func startStack(ctx context.Context, logger logrus.FieldLogger, stack *atlasfile
 
 		containerName := helper.RandomizedName(fmt.Sprintf("atlas-%s-%s", stack.Name, service.Name))
 
-		err := docker.CreateServiceContainer(ctx, logger, stack, service, stackService, file, ensuredVolumes, containerName)
+		err := docker.CreateServiceContainer(ctx, logger, stack, service, stackService, file, ensuredVolumes, ensuredNetworks, containerName)
 		if err != nil {
 			return fmt.Errorf("could not create service container: %w", err)
 		}

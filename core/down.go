@@ -6,6 +6,7 @@ import (
 	"github.com/brunoscheufler/atlas/atlasfile"
 	"github.com/brunoscheufler/atlas/docker"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 )
 
 func Down(ctx context.Context, logger logrus.FieldLogger, cwd, version string, stackNames []string, all bool) error {
@@ -27,7 +28,7 @@ func Down(ctx context.Context, logger logrus.FieldLogger, cwd, version string, s
 		return fmt.Errorf("could not find root directory: %w", err)
 	}
 
-	stateFile, err := readState(cwd, version, logger)
+	stateFile, err := readState(ctx, cwd, version, logger)
 	if err != nil {
 		return fmt.Errorf("could not read state file: %w", err)
 	}
@@ -37,32 +38,36 @@ func Down(ctx context.Context, logger logrus.FieldLogger, cwd, version string, s
 		return nil
 	}
 
-	var stacks []StateStack
-	if len(stackNames) == 0 {
-		stacks = stateFile.Stacks
-	} else {
-		for _, stackName := range stackNames {
-			for i, stack := range stateFile.Stacks {
-				if stack.Name == stackName {
-					stacks = append(stacks, stateFile.Stacks[i])
-					break
-				}
-			}
-
-			return fmt.Errorf("could not find stack %q in state ", stackName)
-		}
+	stateFileStacks, err := stateFile.GetStacks(stackNames)
+	if err != nil {
+		return fmt.Errorf("could not get stacks: %w", err)
 	}
 
-	for _, stack := range stateFile.Stacks {
-		for _, service := range stack.Services {
-			logger.WithFields(logrus.Fields{
-				"stack":   stack.Name,
-				"service": service.Name,
-			}).Debugf("Stopping service")
+	for _, stack := range stateFileStacks {
+		logger.WithField("stack", stack.Name).WithField("network", stack.Network).Infof("- Stopping stack %s\n", stack.Name)
 
-			err = docker.DeleteContainer(ctx, logger, service.ContainerName)
+		{
+			g, ctx := errgroup.WithContext(ctx)
+			for _, service := range stack.Services {
+				service := service
+				g.Go(func() error {
+					logger.WithFields(logrus.Fields{
+						"stack":   stack.Name,
+						"service": service.Name,
+					}).Infof("\t- Stopping service %s\n", service.Name)
+
+					err = docker.DeleteContainer(ctx, logger, service.ContainerName)
+					if err != nil {
+						return fmt.Errorf("could not stop service: %w", err)
+					}
+
+					return nil
+				})
+			}
+
+			err = g.Wait()
 			if err != nil {
-				return fmt.Errorf("could not stop service: %w", err)
+				return fmt.Errorf("could not stop stack services: %w", err)
 			}
 		}
 

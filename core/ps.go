@@ -18,7 +18,7 @@ func Ps(ctx context.Context, logger logrus.FieldLogger, cwd, version string, sta
 		return fmt.Errorf("docker is not running")
 	}
 
-	statefile, err := readState(cwd, version, logger)
+	statefile, err := readState(ctx, cwd, version, logger)
 	if err != nil {
 		return fmt.Errorf("could not read state file: %w", err)
 	}
@@ -34,9 +34,9 @@ func Ps(ctx context.Context, logger logrus.FieldLogger, cwd, version string, sta
 	}
 
 	for _, stack := range stacks {
-		logger.WithField("stack", stack.Name).WithField("network", stack.Network).Infof("- Stack %s running %d services", stack.Name, len(stack.Services))
+		logger.WithField("stack", stack.Name).WithField("network", stack.Network).Infof("%s (%d):", stack.Name, len(stack.Services))
 		for _, service := range stack.Services {
-			logger.WithField("containerName", service.ContainerName).Infof("\t- Service %s running", service.Name)
+			logger.WithField("containerName", service.ContainerName).Infof("\t- %s (%s)", service.Name, service.ContainerInfos.Status)
 		}
 	}
 

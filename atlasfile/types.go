@@ -16,7 +16,6 @@ type ArtifactRef struct {
 }
 
 type VolumeConfig struct {
-	volName              string
 	IsVolume             bool   `json:"isVolume"`
 	HostPathOrVolumeName string `json:"hostPath"`
 	ContainerPath        string `json:"containerPath"`
@@ -83,8 +82,6 @@ type StackService struct {
 type StackConfig struct {
 	dirpath        string
 	containerNames map[string]string
-
-	networkName string
 
 	Name     string         `json:"name"`
 	Services []StackService `json:"services"`

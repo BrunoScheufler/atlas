@@ -20,7 +20,7 @@ func preparePsCmd(rootCmd *cobra.Command) {
 				os.Exit(1)
 			}
 
-			err = atlas.Ps(cmd.Context(), logger, version, cwd, stacks)
+			err = atlas.Ps(cmd.Context(), logger, cwd, version, stacks)
 			if err != nil {
 				cmd.PrintErrf("could not build stacks: %s", err.Error())
 				os.Exit(1)
