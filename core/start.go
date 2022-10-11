@@ -8,7 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func Ps(ctx context.Context, logger logrus.FieldLogger, cwd, version string, stackNames []string) error {
+func Start(ctx context.Context, logger logrus.FieldLogger, version, cwd string, stackName, serviceName string) error {
 	cwd, err := atlasfile.FindRootDir(cwd)
 	if err != nil {
 		return fmt.Errorf("could not find root directory: %w", err)
@@ -28,16 +28,24 @@ func Ps(ctx context.Context, logger logrus.FieldLogger, cwd, version string, sta
 		return nil
 	}
 
-	stacks, err := statefile.GetStacks(stackNames)
-	if err != nil {
-		return fmt.Errorf("could not get stacks: %w", err)
+	stack := statefile.GetStack(stackName)
+	if stack == nil {
+		return fmt.Errorf("stack %s not found", stackName)
 	}
 
-	for _, stack := range stacks {
-		logger.WithField("stack", stack.Name).WithField("network", stack.Network).Infof("%s (%d):", stack.Name, len(stack.Services))
-		for _, service := range stack.Services {
-			logger.WithField("containerName", service.ContainerName).Infof("\t- %s: %s (%s)", service.Name, service.ContainerInfos.Status, service.ContainerInfos.State)
-		}
+	service := stack.GetService(serviceName)
+	if service == nil {
+		return fmt.Errorf("service %s not found", serviceName)
+	}
+
+	if service.ContainerInfos.State == "running" {
+		logger.Infof("Service %s is already running", serviceName)
+		return nil
+	}
+
+	err = docker.StartContainer(ctx, service.ContainerName)
+	if err != nil {
+		return fmt.Errorf("could not start container: %w", err)
 	}
 
 	return nil

@@ -45,6 +45,8 @@ func main() {
 	prepareBuildCmd(rootCmd)
 	prepareEnvCmd(rootCmd)
 	preparePsCmd(rootCmd)
+	prepareStartCmd(rootCmd)
+	prepareStopCmd(rootCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(updateCmd)
 	rootCmd.AddCommand(versionCmd)

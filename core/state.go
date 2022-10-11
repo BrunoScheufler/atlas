@@ -18,6 +18,26 @@ type Statefile struct {
 	Volumes []string     `json:"volumes"`
 }
 
+func (s *Statefile) GetStack(stackName string) *StateStack {
+	for _, stack := range s.Stacks {
+		if stack.Name == stackName {
+			return &stack
+		}
+	}
+
+	return nil
+}
+
+func (s *StateStack) GetService(serviceName string) *StateService {
+	for _, service := range s.Services {
+		if service.Name == serviceName {
+			return &service
+		}
+	}
+
+	return nil
+}
+
 func (s *Statefile) GetStacks(stackNames []string) ([]StateStack, error) {
 	if len(stackNames) == 0 {
 		return s.Stacks, nil

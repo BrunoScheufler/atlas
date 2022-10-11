@@ -176,3 +176,31 @@ func GetContainerInfo(ctx context.Context, containerName string) (*ContainerInfo
 		State:     containers[0].State,
 	}, nil
 }
+
+func StartContainer(ctx context.Context, containerName string) error {
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		return fmt.Errorf("could not create docker client: %w", err)
+	}
+
+	err = cli.ContainerStart(ctx, containerName, types.ContainerStartOptions{})
+	if err != nil {
+		return fmt.Errorf("could not start container %s: %w", containerName, err)
+	}
+
+	return nil
+}
+
+func StopContainer(ctx context.Context, containerName string) error {
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		return fmt.Errorf("could not create docker client: %w", err)
+	}
+
+	err = cli.ContainerStop(ctx, containerName, nil)
+	if err != nil {
+		return fmt.Errorf("could not stop container %s: %w", containerName, err)
+	}
+
+	return nil
+}
