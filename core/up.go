@@ -35,7 +35,7 @@ func Up(ctx context.Context, logger logrus.FieldLogger, version, cwd string, sta
 		return fmt.Errorf("docker is not running")
 	}
 
-	err = Down(ctx, logger, cwd, stackNames)
+	err = Down(ctx, logger, cwd, version, stackNames, false)
 	if err != nil {
 		return fmt.Errorf("could not down: %w", err)
 	}
@@ -89,7 +89,10 @@ func Up(ctx context.Context, logger logrus.FieldLogger, version, cwd string, sta
 		}
 	}
 
-	// TODO persist session for subsequent commands
+	err = writeState(cwd, version, stacks, ensuredVolumes)
+	if err != nil {
+		return fmt.Errorf("could not write state: %w", err)
+	}
 
 	return nil
 }

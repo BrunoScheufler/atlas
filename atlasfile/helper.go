@@ -62,6 +62,10 @@ func (s *StackConfig) SetContainerName(service, containerName string) {
 	s.containerNames[service] = containerName
 }
 
+func (s *StackConfig) GetContainerName(service string) string {
+	return s.containerNames[service]
+}
+
 // GetDirpath returns path of .atlas directory service was declared in
 func (s *ServiceConfig) GetDirpath() string {
 	return s.dirpath

@@ -34,3 +34,30 @@ func CleanupAll(ctx context.Context, logger logrus.FieldLogger) error {
 
 	return nil
 }
+
+func DeleteContainer(ctx context.Context, logger logrus.FieldLogger, containerName string) error {
+	err := exec.RunCommand(ctx, logger, fmt.Sprintf("docker container stop %s && docker container rm -f -v %s", containerName, containerName), exec.RunCommandOptions{})
+	if err != nil {
+		return fmt.Errorf("could not delete network: %w", err)
+	}
+
+	return nil
+}
+
+func DeleteNetwork(ctx context.Context, logger logrus.FieldLogger, networkName string) error {
+	err := exec.RunCommand(ctx, logger, fmt.Sprintf("docker network rm %s", networkName), exec.RunCommandOptions{})
+	if err != nil {
+		return fmt.Errorf("could not delete network: %w", err)
+	}
+
+	return nil
+}
+
+func DeleteVolume(ctx context.Context, logger logrus.FieldLogger, volumeName string) error {
+	err := exec.RunCommand(ctx, logger, fmt.Sprintf("docker volume rm -f %s", volumeName), exec.RunCommandOptions{})
+	if err != nil {
+		return fmt.Errorf("could not delete volume %s: %w", volumeName, err)
+	}
+
+	return nil
+}
