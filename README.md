@@ -14,6 +14,14 @@ variables or fetching data from external systems like IaC is just a few lines of
 Atlas simply detects the dependency graph, builds all required artifacts (Docker images for services), and starts the
 necessary containers.
 
+If you're interested in the design decisions that went into Atlas, check out the [page](./docs/context.md) on this topic.
+
+## scope
+
+Atlas is designed to improve the **local development experience**, and is _not_ meant for other environments. The
+features are designed to solve issues with local development, and may not fit well for other use cases, which is a
+deliberate decision to keep the scope of the project small and focused.
+
 ## features
 
 - **Artifact Graph**: All required artifacts are collected and built in the most efficient order, leveraging layer
@@ -21,6 +29,10 @@ necessary containers.
 - **Atlasfiles**: Atlasfiles can be written in Go, Node.js, TOML, and potentially any other language supporting gRPC.
 - **Services**: Services are defined close to the relevant code, as code.
 - **Stacks**: Stacks can define multiple services and overwrite configuration where needed
+
+## when should I use Atlas?
+
+Check out our page on [use cases](./docs/use-cases.md).
 
 ## installation
 
@@ -227,30 +239,10 @@ networks.
 
 ## reference
 
-## Atlasfile
+### concepts
 
-### basics
+Check out the [concepts](./docs/concepts.md) page.
 
-In each Atlasfile, you can define artifacts, services, and stacks. Since all Atlasfiles are read and merged at whenever
-you use the Atlas CLI, there are no requirements as to how many Atlasfiles you should create, so you can simply find out
-what works best for you.
+### Atlasfile
 
-### artifacts
-
-Artifacts generate OCI-compliant container images using `docker build`. You can pass all relevant options like context,
-dockerfile, and build args.
-
-### services
-
-Services require an image or artifact to create a container from, and can be configured with environment variables,
-environment files, ports, volumes, and commands.
-
-### stacks
-
-Stacks assemble multiple services in a specific order, and can be started, stopped, and restarted together.
-
-## scope
-
-Atlas is designed to improve the **local development experience**, and is _not_ meant for other environments. The
-features are designed to solve issues with local development, and may not fit well for other use cases, which is a
-deliberate decision to keep the scope of the project small and focused.
+Check out the [Atlasfile Reference](./docs/atlasfile.md).
